@@ -1,2 +1,4 @@
 ﻿# 批量忽略所有模型缓存大文件夹
 model_cache_*/
+instance/
+.idea/
