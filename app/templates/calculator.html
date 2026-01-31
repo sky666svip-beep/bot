@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/calculator.css') }}">
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="grid-line"></div>
+    </div>
+
+    <div class="container">
+        <nav class="top-nav">
+            <a href="/" class="return-btn">
+                <i class="fas fa-chevron-left"></i> 返回首页
+            </a>
+            <div class="mode-switch">
+                <button class="nav-btn active" data-target="calculator-panel">科学运算</button>
+                <button class="nav-btn" data-target="converter-panel">单位换算</button>
+            </div>
+        </nav>
+
+        <div id="calculator-panel" class="panel active">
+            <div class="display-area">
+                <div class="history" id="calc-history"></div>
+                <div class="result" id="calc-display">0</div>
+            </div>
+
+            <div class="keypad">
+                <div class="status-bar">
+                    <button class="func-btn small" id="deg-rad-btn">DEG</button>
+                    <span class="brand">NEXUS-X1</span>
+                </div>
+
+                <button class="func-btn" onclick="inputFunc('sin')">sin</button>
+                <button class="func-btn" onclick="inputFunc('cos')">cos</button>
+                <button class="func-btn" onclick="inputFunc('tan')">tan</button>
+                <button class="func-btn" onclick="inputFunc('log')">log</button>
+                <button class="func-btn" onclick="inputFunc('ln')">ln</button>
+
+                <button class="func-btn" onclick="inputFunc('asin')">asin</button>
+                <button class="func-btn" onclick="inputFunc('acos')">acos</button>
+                <button class="func-btn" onclick="inputFunc('atan')">atan</button>
+                <button class="func-btn" onclick="inputOperator('^')">xⁿ</button>
+                <button class="func-btn" onclick="inputFunc('sqrt')">√</button>
+
+                <button class="func-btn" onclick="inputFunc('cbrt')">∛</button>
+                <button class="func-btn" onclick="inputFunc('fact')">n!</button>
+                <button class="func-btn" onclick="insertConstant('PI')">π</button>
+                <button class="func-btn" onclick="insertConstant('E')">e</button>
+                <button class="func-btn" onclick="inputFunc('recip')">1/x</button>
+
+                <button class="func-btn" onclick="inputOperator('(')">(</button>
+                <button class="func-btn" onclick="inputOperator(')')">)</button>
+                <button class="control-btn" onclick="clearDisplay()">C</button>
+                <button class="control-btn" onclick="backspace()">←</button>
+                <button class="op-btn" onclick="inputOperator('/')">÷</button>
+
+                <button class="num-btn" onclick="inputNumber(7)">7</button>
+                <button class="num-btn" onclick="inputNumber(8)">8</button>
+                <button class="num-btn" onclick="inputNumber(9)">9</button>
+                <button class="op-btn" onclick="inputOperator('*')">×</button>
+
+                <button class="num-btn" onclick="inputNumber(4)">4</button>
+                <button class="num-btn" onclick="inputNumber(5)">5</button>
+                <button class="num-btn" onclick="inputNumber(6)">6</button>
+                <button class="op-btn" onclick="inputOperator('-')">-</button>
+
+                <button class="num-btn" onclick="inputNumber(1)">1</button>
+                <button class="num-btn" onclick="inputNumber(2)">2</button>
+                <button class="num-btn" onclick="inputNumber(3)">3</button>
+                <button class="op-btn" onclick="inputOperator('+')">+</button>
+
+                <button class="num-btn" onclick="inputOperator('%')">%</button>
+                <button class="num-btn" onclick="inputNumber(0)">0</button>
+                <button class="num-btn" onclick="inputNumber('.')">.</button>
+                <button class="action-btn" onclick="calculate()">=</button>
+            </div>
+        </div>
+
+        <div id="converter-panel" class="panel">
+            <div class="converter-wrapper">
+                <div class="unit-tabs">
+                    <button class="unit-tab active" onclick="switchUnitType('length')">长度</button>
+                    <button class="unit-tab" onclick="switchUnitType('area')">面积</button>
+                    <button class="unit-tab" onclick="switchUnitType('volume')">体积</button>
+                    <button class="unit-tab" onclick="switchUnitType('mass')">质量</button>
+                    <button class="unit-tab" onclick="switchUnitType('time')">时间</button>
+                    <button class="unit-tab" onclick="switchUnitType('temp')">温度</button>
+                </div>
+
+                <div class="conversion-box">
+                    <div class="input-group">
+                        <label>数值 Input</label>
+                        <input type="number" id="unit-input" value="1" oninput="convert()">
+                    </div>
+
+                    <div class="input-group">
+                        <label>从 From</label>
+                        <select id="unit-from" onchange="convert()"></select>
+                    </div>
+
+                    <div class="divider">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+
+                    <div class="input-group">
+                        <label>到 To</label>
+                        <select id="unit-to" onchange="convert()"></select>
+                    </div>
+
+                    <div class="result-display">
+                        <span id="unit-result">0</span>
+                        <span id="unit-symbol" class="unit-tag"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+</body>
+</html>

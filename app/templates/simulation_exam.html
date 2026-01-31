@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能模拟考试 - 自动答题助手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- 复用主样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div id="sakura-container"></div>
+    <div class="clock-container">
+		<span id="hour" class="clock-unit">00</span><span class="colon">:</span>
+		<span id="minute" class="clock-unit">00</span><span class="colon">:</span>
+		<span id="second" class="clock-unit">00</span>
+	</div>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="/">
+                <i class="fas fa-robot me-2"></i>自动答题助手
+            </a>
+            <span class="navbar-text ms-3 border-start ps-3 text-muted">
+                智能模拟考试
+            </span>
+            <div class="ms-auto">
+                <a href="/" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                    <i class="fas fa-home me-1"></i>返回首页
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <!-- 1. 筛选区 -->
+        <div class="row justify-content-center" id="filterSection">
+            <div class="col-lg-8">
+                <div class="card main-card p-4">
+                    <div class="text-center mb-4">
+                        <h3 class="fw-bold text-primary-gradient">定制你的模拟考试</h3>
+                        <p class="text-muted">基于答题助手实时生成个性化试题</p>
+                    </div>
+                    
+                    <form id="examForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="fas fa-book me-2 text-primary"></i>科目</label>
+                                <select class="form-select" id="subject" required>
+                                    <option value="语文">语文</option>
+                                    <option value="数学" selected>数学</option>
+                                    <option value="英语">英语</option>
+                                    <option value="物理">物理</option>
+                                    <option value="化学">化学</option>
+                                    <option value="历史">历史</option>
+                                    <option value="地理">地理</option>
+                                    <option value="生物">生物</option>
+                                    <option value="计算机">计算机</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="fas fa-graduation-cap me-2 text-info"></i>年级</label>
+                                <select class="form-select" id="grade">
+                                    <option value="小学">小学</option>
+                                    <option value="初中" selected>初中</option>
+                                    <option value="高中">高中</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold"><i class="fas fa-tag me-2 text-warning"></i>核心知识点</label>
+                                <input type="text" class="form-control" id="keypoint" placeholder="例如：二次函数、力学、定语从句..." required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold mb-2"><i class="fas fa-shapes me-2 text-success"></i>题型</label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="单选题" id="type1" checked>
+                                        <label class="form-check-label" for="type1">单选题</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="判断题" id="type2">
+                                        <label class="form-check-label" for="type2">判断题</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="填空题" id="type3">
+                                        <label class="form-check-label" for="type3">填空题</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="简答题" id="type4">
+                                        <label class="form-check-label" for="type4">简答题</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold"><i class="fas fa-layer-group me-2 text-secondary"></i>题目数量: <span id="countVal" class="text-primary">3</span></label>
+                                <input type="range" class="form-range" id="count" min="1" max="10" value="3" oninput="document.getElementById('countVal').innerText=this.value">
+                            </div>
+                            
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-modern btn-primary-gradient w-100 py-3">
+                                    <i class="fas fa-magic me-2"></i>生成试题
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- 加载遮罩 -->
+                    <div id="loadingMask" class="loading-overlay" style="display: none;">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                            <p class="h5 text-primary fw-bold" id="loadingText">正在出题...</p>
+                            <small class="text-muted">这可能需要几秒钟，请稍候</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 答题区 (初始隐藏) -->
+        <div id="examArea" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold"><i class="fas fa-edit me-2"></i>答题中...</h4>
+                <div class="badge bg-light text-dark border p-2 fs-6">
+                    <i class="far fa-clock me-1"></i>此试卷由答题助手实时生成
+                </div>
+            </div>
+            
+            <div id="questionsContainer">
+                <!-- 题目卡片将插入这里 -->
+            </div>
+            
+            <div class="text-center mt-5">
+                <button onclick="ExamApp.submitExam()" class="btn btn-modern btn-success w-50 py-3 fs-5 shadow">
+                    <i class="fas fa-check-double me-2"></i>提交答案
+                </button>
+            </div>
+        </div>
+        
+        <!-- 3. 结果区 (初始隐藏) -->
+        <div id="resultArea" style="display: none;" class="mt-4">
+            <div class="card main-card p-5 text-center mb-5">
+                <h2 class="text-muted mb-3">考试得分</h2>
+                <div class="score-display mb-3" id="finalScore">0</div>
+                <p id="scoreComment" class="text-muted mb-4">继续加油！</p>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <button onclick="location.reload()" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="fas fa-redo me-2"></i>再来一套
+                    </button>
+                    <a href="{{ url_for('api.view_history') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="fas fa-history me-2"></i>查看历史
+                    </a>
+                </div>
+            </div>
+            
+            <h4 class="fw-bold mb-3"><i class="fas fa-search-plus me-2"></i>试卷解析</h4>
+            <div id="analysisContainer">
+                <!-- 解析内容插入这里 -->
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- 错题本侧边栏 (复用 logic) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="notebookDrawer" style="width: 400px;">
+        <div class="offcanvas-header bg-danger text-white">
+            <h5 class="offcanvas-title fw-bold"><i class="fas fa-edit me-2"></i>我的错题本</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-3">
+            <div id="mistakeList" class="list-group list-group-flush">
+                <p class="text-center text-muted mt-5">正在加载错题本...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 浮动错题本按钮 -->
+    <button class="btn btn-warning rounded-circle shadow-lg position-fixed bottom-0 end-0 m-4 p-3" 
+            style="width: 60px; height: 60px; z-index: 1000;"
+            onclick="Notebook.refreshAll(); new bootstrap.Offcanvas(document.getElementById('notebookDrawer')).show();">
+        <i class="fas fa-book-open text-white fs-4"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 复用特效与逻辑 -->
+    <script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/notebook.js') }}"></script>
+    <!-- 独立的考试逻辑 -->
+    <script src="{{ url_for('static', filename='js/simulation-exam.js') }}"></script>
+    
+    <!-- MathJax 配置 -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>

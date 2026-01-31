@@ -1,0 +1,276 @@
+/* app/static/essay.css */
+
+/* === 1. 全局主题变量系统 === */
+:root {
+    /* 默认基础色 */
+    --bg-color: #f8f9fa;
+    --text-primary: #2c3e50;
+    --text-secondary: #6c757d;
+    --border-radius: 12px;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --transition-base: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+    /* 默认主题色 (语文-暖色) */
+    --theme-primary: #ff9f43;    /* 暖橙色 */
+    --theme-light: #fff5eb;      /* 浅米色背景 */
+    --theme-hover: #ff8c24;
+    --theme-border: #ffe0c2;
+    --btn-text: #fff;
+}
+
+/* 英语主题 (冷色) */
+body.theme-english {
+    --theme-primary: #48dbfb;    /* 天蓝色 */
+    --theme-light: #f0fbff;      /* 浅蓝白背景 */
+    --theme-hover: #29ccf0;
+    --theme-border: #cff4fc;
+}
+
+/* === 2. 基础排版与布局 === */
+body {
+    background-color: var(--bg-color);
+    font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-size: 14px;
+    transition: background-color 0.5s ease;
+}
+
+/* 导航栏样式覆盖 */
+.navbar-custom {
+    background: #fff !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.navbar-brand {
+    font-weight: 700;
+    color: #2c3e50 !important;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+.nav-link.active {
+    color: var(--theme-primary) !important;
+    background: transparent !important;
+    font-weight: 600;
+    position: relative;
+}
+/* 导航项激活下划线动效 */
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 15%;
+    width: 70%;
+    height: 3px;
+    background: var(--theme-primary);
+    border-radius: 10px;
+}
+
+/* === 3. 卡片式设计 === */
+.main-card {
+    background: #fff;
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: var(--shadow-soft);
+    padding: 24px;
+    transition: var(--transition-base);
+    height: 100%;
+    overflow: hidden; /* 防止内容溢出圆角 */
+}
+.main-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+/* === 4. 模式切换 Tab (语文/英语) === */
+.nav-pills .nav-link {
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 10px 20px;
+    transition: var(--transition-base);
+    background-color: transparent;
+    border: 1px solid transparent;
+}
+.nav-pills .nav-link:hover {
+    background-color: #f1f3f5;
+    transform: scale(1.02);
+}
+.nav-pills .nav-link.active {
+    background-color: var(--theme-light);
+    color: var(--theme-primary);
+    border: 1px solid var(--theme-border);
+}
+
+/* === 5. 输入与上传区域 === */
+.input-area {
+    border: 2px dashed #dee2e6;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    background: #fafafa;
+    transition: var(--transition-base);
+}
+.input-area:hover, .input-area:focus-within {
+    border-color: var(--theme-primary);
+    background: #fff;
+}
+textarea.form-control {
+    border: none;
+    background: transparent;
+    resize: none;
+    font-size: 15px;
+    box-shadow: none !important; /* 移除 Bootstrap 默认聚焦阴影 */
+}
+.upload-btn-group .btn {
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    color: var(--text-secondary);
+    background: #fff;
+    font-size: 13px;
+    padding: 6px 12px;
+    transition: var(--transition-base);
+}
+.upload-btn-group .btn:hover {
+    border-color: var(--theme-primary);
+    color: var(--theme-primary);
+    background: var(--theme-light);
+}
+
+/* === 6. 核心按钮 === */
+.btn-submit {
+    background: var(--theme-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: var(--transition-base);
+}
+.btn-submit:hover {
+    background: var(--theme-hover);
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    color: #fff;
+}
+.btn-submit:active {
+    transform: scale(0.98);
+}
+.btn-submit:disabled {
+    background: #ccc;
+    transform: none;
+}
+
+/* === 7. 批改结果展示 (Result Card) === */
+.result-section {
+    animation: fadeIn 0.5s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 评分徽章 */
+.score-badge-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--theme-light);
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 5px solid var(--theme-primary);
+}
+.score-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--theme-primary);
+}
+/* 评分颜色等级 */
+.score-A, .score-Excellent { color: #2ecc71 !important; } /* 绿 */
+.score-B, .score-Good { color: #3498db !important; }      /* 蓝 */
+.score-C, .score-Medium { color: #f1c40f !important; }    /* 黄 */
+.score-D, .score-Pass { color: #e67e22 !important; }      /* 橙 */
+.score-F, .score-Fail { color: #e74c3c !important; }      /* 红 */
+
+/* 子模块卡片 (总评、纠错等) */
+.sub-card {
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: var(--transition-base);
+}
+.sub-card:hover {
+    border-color: var(--theme-border);
+    background: var(--theme-light); /* 极其淡的主题色背景 */
+}
+
+.sub-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #34495e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+/* 标题图标颜色跟随主题 */
+.sub-title i { color: var(--theme-primary); }
+
+/* 详情文本样式 */
+.detail-text { font-size: 14px; color: #555; }
+.highlight-good { background-color: #e8f5e9; padding: 2px 4px; border-radius: 4px; color: #2e7d32; }
+.highlight-bad { background-color: #ffebee; padding: 2px 4px; border-radius: 4px; color: #c62828; text-decoration: line-through; }
+.correction-arrow { color: #999; margin: 0 5px; font-size: 12px; }
+
+/* 加载动画 */
+.loading-container {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-secondary);
+}
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: var(--theme-primary);
+}
+.result-section {
+    /* 核心：限制最大高度 + 开启垂直滚动 */
+    max-height: 600px; /* 高度可调，600px 大约能容纳 2-3 屏内容，保持卡片平衡 */
+    overflow-y: auto;  /* 内容超出时自动显示滚动条 */
+
+    /* 布局优化 */
+    padding-right: 12px; /* 给滚动条留出呼吸空间 */
+    margin-right: -8px;  /* 视觉补偿，让滚动条贴近卡片边缘 */
+
+    /* 平滑滚动体验 */
+    scroll-behavior: smooth;
+}
+
+/* --- 滚动条美化 (Chrome, Safari, Edge) --- */
+.result-section::-webkit-scrollbar {
+    width: 6px; /* 纤细的滚动条 */
+}
+
+.result-section::-webkit-scrollbar-track {
+    background: transparent; /* 轨道透明，更清爽 */
+    margin: 4px 0; /* 上下留白 */
+}
+
+.result-section::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0; /* 默认浅灰，低调不抢眼 */
+    border-radius: 10px;       /* 圆润边角 */
+    border: 1px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.3s;
+}
+
+/* 鼠标悬停或滚动时，滚动条变成当前的主题色！(联动 :root 变量) */
+.result-section::-webkit-scrollbar-thumb:hover {
+    background-color: var(--theme-primary);
+    /* 语文模式变橙色，英语模式变蓝色 */
+}

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>自动答题助手</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ range(1, 1000) | random }}">
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+	<div id="sakura-container"></div>
+	<div class="clock-container">
+		<span id="hour" class="clock-unit">00</span><span class="colon">:</span>
+		<span id="minute" class="clock-unit">00</span><span class="colon">:</span>
+		<span id="second" class="clock-unit">00</span>
+	</div>
+	<div class="container py-5">
+		<div class="row justify-content-center">
+			<div class="col-lg-9 col-md-11">
+				<div class="card main-card p-4 mb-4 slide-in">
+					<div class="text-center mb-4">
+						<h2 class="fw-bold text-primary gradient-text">自动答题助手</h2>
+						<p class="text-muted small">基于 LLM 矩阵运算与视觉大模型的全能解题引擎</p>
+					</div>
+					<div class="mb-3 position-relative">
+						<textarea id="rawText" class="form-control custom-textarea" rows="4" placeholder="✨ 请在此输入题目文本，或粘贴题目内容..."></textarea>
+						<button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" onclick="document.getElementById('rawText').value=''" title="清空">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+					<div class="row g-2 mb-3">
+						<div class="col-md-6">
+							<button id="submitBtn" class="btn btn-modern btn-primary-gradient w-100 h-100" onclick="SearchEngine.processAndSolve()">
+								<i class="fas fa-search me-2"></i> 立即搜题 </button>
+						</div>
+						<div class="col-md-3">
+							<input type="file" id="imageUpload" accept="image/*" style="display: none;" onchange="SearchEngine.uploadImage()">
+							<button class="btn btn-modern btn-info-soft w-100 h-100" onclick="document.getElementById('imageUpload').click()">
+								<i class="fas fa-camera me-2"></i> 图片识别 </button>
+						</div>
+						<div class="col-md-3">
+							<input type="file" id="docUpload" accept=".pdf,.docx,.txt" style="display: none;" onchange="SearchEngine.handleDocUpload()">
+							<button class="btn btn-modern btn-outline-primary w-100 h-100" onclick="document.getElementById('docUpload').click()" style="border-radius: 12px; border-width: 2px;">
+								<i class="fas fa-file-pdf me-2"></i> 文档识别 </button>
+						</div>
+					</div>
+					<div id="statusMessage" class="alert alert-info text-center py-2" style="display: none;">
+						<div class="spinner-border spinner-border-sm me-2"></div>
+						<span id="statusText">正在思考中...</span>
+					</div>
+				</div>
+				<div class="row g-4 mb-4">
+					<!-- 第一行：我的错题本 + 历史记录 -->
+					<div class="col-md-6">
+						<a href="javascript:;" class="text-decoration-none" onclick="Notebook.refreshAll(); new bootstrap.Offcanvas(document.getElementById('notebookDrawer')).show();">
+							<div class="nav-card p-3 d-flex align-items-center justify-content-between">
+								<div class="d-flex align-items-center">
+									<div class="icon-box bg-danger-subtle text-danger rounded-circle me-3">
+										<i class="fas fa-edit"></i>
+									</div>
+									<div>
+										<h6 class="mb-0 fw-bold text-dark">我的错题本</h6>
+										<small class="text-muted">快速回顾薄弱知识点</small>
+									</div>
+								</div>
+								<i class="fas fa-chevron-right text-muted"></i>
+							</div>
+						</a>
+					</div>
+					<div class="col-md-6">
+						<a href="{{ url_for('api.view_history') }}" class="text-decoration-none">
+							<div class="nav-card p-3 d-flex align-items-center justify-content-between">
+								<div class="d-flex align-items-center">
+									<div class="icon-box bg-primary-subtle text-primary rounded-circle me-3">
+										<i class="fas fa-history"></i>
+									</div>
+									<div>
+										<h6 class="mb-0 fw-bold text-dark">历史记录</h6>
+										<small class="text-muted">查看所有搜索过的题目</small>
+									</div>
+								</div>
+								<i class="fas fa-chevron-right text-muted"></i>
+							</div>
+						</a>
+					</div>
+					<!-- 第二行：模拟考试 + 数理化公式手册 -->
+					<div class="col-md-6">
+						<a href="/simulation-exam" class="text-decoration-none">
+							<div class="nav-card p-3 d-flex align-items-center justify-content-between">
+								<div class="d-flex align-items-center">
+									<div class="icon-box bg-warning-subtle text-warning rounded-circle me-3">
+										<i class="fas fa-clipboard-check me-0"></i>
+									</div>
+									<div>
+										<h6 class="mb-0 fw-bold text-dark">模拟考试</h6>
+										<small class="text-muted">AI智能出题 全真模拟测试</small>
+									</div>
+								</div>
+								<i class="fas fa-chevron-right text-muted"></i>
+							</div>
+						</a>
+					</div>
+					<div class="col-md-6">
+						<a href="/formulas" class="text-decoration-none">
+							<div class="nav-card p-3 d-flex align-items-center justify-content-between">
+								<div class="d-flex align-items-center">
+									<div class="icon-box bg-purple-subtle text-purple rounded-circle me-3">
+										<i class="fas fa-atom"></i>
+									</div>
+									<div>
+										<h6 class="mb-0 fw-bold text-dark">数理化公式手册</h6>
+										<small class="text-muted">常用定理与公式速查</small>
+									</div>
+								</div>
+								<i class="fas fa-chevron-right text-muted"></i>
+							</div>
+						</a>
+					</div>
+					<!-- 第三行：英语作文批改 + 备选功能（3种方案可选） -->
+					<div class="col-md-6">
+						<a href="/english-essay-correct" class="text-decoration-none">
+							<div class="nav-card p-3 d-flex align-items-center justify-content-between">
+								<div class="d-flex align-items-center">
+									<div class="icon-box bg-info-subtle text-info rounded-circle me-3">
+										<i class="fas fa-pen-nib"></i>
+									</div>
+									<div>
+										<h6 class="mb-0 fw-bold text-dark">英语作文批改</h6>
+										<small class="text-muted">AI智能纠错 语法润色提分</small>
+									</div>
+								</div>
+								<i class="fas fa-chevron-right text-muted"></i>
+							</div>
+						</a>
+					</div>
+					<div class="col-md-6">
+						<a href="/study-plan" class="text-decoration-none">
+							<div class="nav-card p-3 d-flex align-items-center justify-content-between">
+								<div class="d-flex align-items-center">
+									<div class="icon-box bg-indigo-subtle text-indigo rounded-circle me-3">
+										<i class="fas fa-calendar-check"></i>
+									</div>
+									<div>
+										<h6 class="mb-0 fw-bold text-dark">学习计划生成</h6>
+										<small class="text-muted">个性化定制学习节奏</small>
+									</div>
+								</div>
+								<i class="fas fa-chevron-right text-muted"></i>
+							</div>
+						</a>
+					</div>
+
+				</div>
+				<div id="resultArea" class="mt-4 animate__animated animate__fadeIn" style="display: none;">
+					<div class="card shadow-sm border-0 overflow-hidden">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+							<div>
+								<span id="sourceBadge" class="badge bg-primary">智能检索</span>
+							</div>
+							<div class="d-flex align-items-center">
+								<button class="btn btn-sm btn-outline-secondary ms-2" title="收藏本题">
+									<i class="far fa-star"></i>
+								</button>
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center mb-3">
+								<h6 class="card-title mb-0 text-success">
+									<i class="fas fa-check-circle me-2"></i>正确答案
+								</h6>
+								<button class="btn btn-sm btn-outline-success border-0" onclick="copyAnswer()">
+									<i class="far fa-copy me-1"></i><span id="copyTip">复制</span>
+								</button>
+							</div>
+							<div class="p-3 bg-success-subtle text-success rounded border border-success-subtle fw-bold" id="targetAnswer"> 等待搜索... </div>
+						</div>
+						<div class="card-footer bg-white p-4">
+							<div class="mb-3">
+								<small class="text-muted d-block mb-2">置信度分析</small>
+								<div class="progress" style="height: 6px;">
+									<div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+								</div>
+							</div>
+							<h6 class="fw-bold mb-3"><i class="fas fa-book-open me-2 text-primary"></i>题目解析</h6>
+							<div id="explanation" class="reason-text text-secondary leading-relaxed">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row slide-in" style="animation-delay: 0.2s;">
+					<div class="col-md-6 mb-3">
+						<div class="card main-card p-3 h-100">
+							<h6 class="text-primary fw-bold mb-3"><i class="fas fa-chart-pie me-2"></i>知识点分布</h6>
+							<div id="pieChart" style="width: 100%; height: 250px;"></div>
+						</div>
+					</div>
+					<div class="col-md-6 mb-3">
+						<div class="card main-card p-3 h-100">
+							<h6 class="text-primary fw-bold mb-3"><i class="fas fa-fire me-2"></i>学习热力图</h6>
+							<div id="heatmapChart" style="width: 100%; height: 250px;"></div>
+						</div>
+					</div>
+				</div>
+				<p class="text-center mt-4 text-muted small opacity-50">© 2026 AI Learning Assistant</p>
+			</div>
+		</div>
+		<div class="offcanvas offcanvas-start" tabindex="-1" id="notebookDrawer" style="width: 400px;">
+			<div class="offcanvas-header bg-danger text-white">
+				<h5 class="offcanvas-title fw-bold"><i class="fas fa-edit me-2"></i>我的错题库</h5>
+				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+			</div>
+			<div class="offcanvas-body p-3">
+				<div id="mistakeList" class="list-group list-group-flush">
+					<p class="text-center text-muted mt-5">正在加载错题本...</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/search-engine.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/notebook.js') }}"></script>
+	<script>
+		// 初始化
+		document.addEventListener('DOMContentLoaded', () => {
+		    Dashboard.init();
+		    Notebook.init();
+		});
+	</script>
+</body>
+</html>

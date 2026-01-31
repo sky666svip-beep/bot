@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数理化公式手册 - AI 助手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div id="sakura-container"></div>
+
+<nav class="navbar navbar-light bg-white bg-opacity-75 backdrop-blur fixed-top border-bottom">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="/">
+            <i class="fas fa-chevron-left me-2"></i>返回首页
+        </a>
+        <span class="navbar-text fw-bold text-dark">
+            📐 数理化核心公式手册
+        </span>
+    </div>
+</nav>
+
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="text-center mb-5 slide-in">
+                <h1 class="fw-bold gradient-text">知识库中心</h1>
+                <p class="text-muted">查阅常用的数学定理、物理公式及化学方程式</p>
+            </div>
+
+            <ul class="nav nav-pills nav-fill mb-4 p-1 bg-white rounded-pill shadow-sm border slide-in" id="formulaTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill" id="math-tab" data-bs-toggle="tab" data-bs-target="#math" type="button">
+                        <i class="fas fa-square-root-alt me-2"></i>数学
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill" id="physics-tab" data-bs-toggle="tab" data-bs-target="#physics" type="button">
+                        <i class="fas fa-atom me-2"></i>物理
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill" id="chemistry-tab" data-bs-toggle="tab" data-bs-target="#chemistry" type="button">
+                        <i class="fas fa-flask me-2"></i>化学
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content slide-in" style="animation-delay: 0.1s;">
+
+                <div class="tab-pane fade show active" id="math" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="formula-card card h-100 border-0 shadow-sm p-4 text-center">
+                                <div class="icon-lg bg-blue-subtle text-primary mb-3 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width:60px; height:60px;">
+                                    <i class="fas fa-infinity fa-lg"></i>
+                                </div>
+                                <h5>微积分</h5>
+                                <p class="text-muted small">导数、积分基本公式表</p>
+                                <button class="btn btn-sm btn-outline-primary mt-auto">查看详情</button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="formula-card card h-100 border-0 shadow-sm p-4 text-center">
+                                <div class="icon-lg bg-blue-subtle text-primary mb-3 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width:60px; height:60px;">
+                                    <i class="fas fa-shapes fa-lg"></i>
+                                </div>
+                                <h5>立体几何</h5>
+                                <p class="text-muted small">体积、表面积计算公式</p>
+                                <button class="btn btn-sm btn-outline-primary mt-auto">查看详情</button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="formula-card card h-100 border-0 dashed-border p-4 text-center d-flex align-items-center justify-content-center">
+                                <span class="text-muted">➕ 更多数学公式添加中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="physics" role="tabpanel">
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle me-2"></i>物理公式库正在建设中，敬请期待...
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="chemistry" role="tabpanel">
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-tools me-2"></i>化学元素周期表准备中...
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if(UIEffects && UIEffects.initSakura) {
+            UIEffects.initSakura();
+        }
+    });
+</script>
+
+</body>
+</html>
