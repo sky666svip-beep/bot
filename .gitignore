@@ -2,3 +2,5 @@
 model_cache_*/
 instance/
 .idea/
+data/
+.vscode/
