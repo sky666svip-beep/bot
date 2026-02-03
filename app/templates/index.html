@@ -100,6 +100,10 @@
                                     <i class="fas fa-book text-danger"></i>
                                     <span>作文大全</span>
                                 </a>
+								<a href="{{ url_for('main.poetry_page') }}" class="sub-func-btn-compact">
+									<i class="fas fa-scroll text-danger"></i>
+									<span>诗词鉴赏</span>
+								</a>
 							</div>
 						</div>
 						<div class="col position-relative">
@@ -146,7 +150,7 @@
 								<h6 class="fw-bold text-dark">学习工具</h6>
 							</button>
 							<div class="collapse compact-sub-menu menu-end" id="menuTools" style="right: 0; left: auto;">
-								<a href="{{ url_for('api.view_history') }}" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.view_history') }}" class="sub-func-btn-compact">
 									<i class="fas fa-history text-secondary"></i>
 									<span>历史记录</span>
 								</a>
@@ -157,6 +161,10 @@
 								<a href="{{ url_for('main.study_plan_page') }}" class="sub-func-btn-compact">
 									<i class="fas fa-calendar-alt text-secondary"></i>
 									<span>学习计划</span>
+								</a>
+								<a href="https://www.kiddoworksheets.com/" target="_blank" class="sub-func-btn-compact">
+                                    <i class="fas fa-book text-secondary"></i>
+                                    <span>练习本定制</span>
 								</a>
 							</div>
 						</div>

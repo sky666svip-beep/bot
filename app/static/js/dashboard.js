@@ -49,10 +49,10 @@ const Dashboard = {
             series: [{
                 name: '题目类型',
                 type: 'pie',
-                radius: [30, 100],
+                radius: [20, 100],
                 center: ['50%', '45%'],
                 roseType: 'area', // 玫瑰图模式
-                itemStyle: { borderRadius: 8 },
+                itemStyle: { borderRadius: 5 },
                 data: pieData.length ? pieData : [{ name: '暂无数据', value: 0 }]
             }]
         });

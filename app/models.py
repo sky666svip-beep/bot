@@ -39,6 +39,71 @@ class QuestionBank(db.Model):
             'options': self.options
         }
 
+class Poetry(db.Model):
+    """
+    古诗词基础表：存储原文信息
+    """
+    __tablename__ = 'poetry'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    author = db.Column(db.String(255), nullable=False)
+    dynasty = db.Column(db.String(50)) # 朝代
+    content = db.Column(db.Text, nullable=False) # 原文
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 联合索引加速搜索
+    __table_args__ = (
+        db.Index('idx_poetry_title_author', 'title', 'author'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'author': self.author,
+            'dynasty': self.dynasty,
+            'content': self.content
+        }
+
+class PoetryAnalysis(db.Model):
+    """
+    古诗词赏析表：存储分级赏析内容
+    """
+    __tablename__ = 'poetry_analysis'
+    id = db.Column(db.Integer, primary_key=True)
+    poetry_id = db.Column(db.Integer, db.ForeignKey('poetry.id'), nullable=False)
+    
+    translation = db.Column(db.Text) # 译文
+    appreciation = db.Column(db.Text) # 赏析
+    annotations = db.Column(db.Text) # 注释 (JSON string)
+    
+    # 冗余字段用于快速检索，避免每次都联表
+    title = db.Column(db.String(255))
+    author = db.Column(db.String(255))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.Index('idx_analysis_lookup', 'title', 'author'),
+    )
+
+    def to_dict(self):
+        import json
+        try:
+            ants = json.loads(self.annotations) if self.annotations else []
+        except:
+            ants = []
+            
+        return {
+            'id': self.id,
+            'poetry_id': self.poetry_id,
+            'translation': self.translation,
+            'appreciation': self.appreciation,
+            'annotations': ants,
+            'title': self.title,
+            'author': self.author
+        }
+
 class UserHistory(db.Model):
     """
     用户搜题历史表

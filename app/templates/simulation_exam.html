@@ -41,7 +41,7 @@
                 <div class="card main-card p-4">
                     <div class="text-center mb-4">
                         <h3 class="fw-bold text-primary-gradient">定制你的模拟考试</h3>
-                        <p class="text-muted">基于答题助手实时生成个性化试题</p>
+                        <p class="text-muted">基于答题助手生成个性化试卷</p>
                     </div>
                     
                     <form id="examForm">
@@ -151,7 +151,7 @@
                     <button onclick="location.reload()" class="btn btn-outline-primary rounded-pill px-4">
                         <i class="fas fa-redo me-2"></i>再来一套
                     </button>
-                    <a href="{{ url_for('api.view_history') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <a href="{{ url_for('main.view_history') }}" class="btn btn-outline-secondary rounded-pill px-4">
                         <i class="fas fa-history me-2"></i>查看历史
                     </a>
                 </div>
@@ -191,21 +191,5 @@
     <script src="{{ url_for('static', filename='js/notebook.js') }}"></script>
     <!-- 独立的考试逻辑 -->
     <script src="{{ url_for('static', filename='js/simulation-exam.js') }}"></script>
-    
-    <!-- MathJax 配置 -->
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true
-            },
-            options: {
-                ignoreHtmlClass: 'tex2jax_ignore',
-                processHtmlClass: 'tex2jax_process'
-            }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 </body>
 </html>

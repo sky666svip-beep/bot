@@ -101,5 +101,10 @@ def clean_and_import(file_path):
 
 
 if __name__ == "__main__":
-    # 删除旧的 choicebot.db
-    clean_and_import("data/1.xlsx")
+    # 删除旧的 app.db (确保 schema 更新)
+    db_path = "data/app.db"
+    if os.path.exists(db_path):
+        os.remove(db_path)
+        print(f"🗑️ 已删除旧数据库: {db_path}")
+        
+    clean_and_import("data/4.xlsx")

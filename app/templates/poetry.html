@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>古诗词鉴赏 - 自动答题助手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --ink-black: #2c2c2c;       /* 墨色 */
+            --ink-grey: #595959;        /* 浅墨 */
+            --rice-paper: #f7f4ed;      /* 宣纸白 */
+            --cyan-blue: #4d7a88;       /* 黛蓝/水墨青 */
+            --apricot: #f0e6d6;         /* 浅杏 */
+            --red-seal: #b24646;        /* 印泥红 */
+            --border-color: #dcd6c8;
+        }
+
+        body {
+            background-color: var(--rice-paper);
+            background-image: 
+                radial-gradient(#e6e1d5 1px, transparent 1px),
+                linear-gradient(to right, rgba(230, 225, 213, 0.3) 1px, transparent 1px);
+            background-size: 20px 20px, 40px 100%; /* 模拟宣纸纹理 */
+            font-family: 'Noto Serif SC', 'Songti SC', serif;
+            color: var(--ink-black);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #sakura-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+        .sakura {
+            position: absolute;
+            background-color: #ffd7e6;
+            border-radius: 100% 0 100% 0;
+            opacity: 0.7;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+        /* 顶部装饰 - 淡墨竹影 */
+        .decoration-top-left {
+            position: fixed;
+            top: -50px;
+            left: -50px;
+            width: 300px;
+            height: 300px;
+            opacity: 0.15;
+            z-index: -1;
+            pointer-events: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M40,100 Q60,50 40,0 M40,20 L60,10 M40,50 L70,40 M40,80 L60,70" stroke="%232c2c2c" stroke-width="2" fill="none"/></svg>');
+            background-repeat: no-repeat;
+        }
+        
+        /* 底部装饰 - 细枝梅影 */
+        .decoration-bottom-right {
+            position: fixed;
+            bottom: -50px;
+            right: -50px;
+            width: 400px;
+            height: 400px;
+            opacity: 0.1;
+            z-index: -1;
+            pointer-events: none;
+            transform: rotate(180deg);
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,100 Q80,50 50,0 M50,30 L80,20 M50,60 L90,50" stroke="%232c2c2c" stroke-width="1" fill="none"/></svg>');
+            background-repeat: no-repeat;
+        }
+
+
+        .main-container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 40px 20px;
+        }
+
+        /* 标题区 */
+        .header-section {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .main-title {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 4.5rem;
+            color: var(--ink-black);
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .sub-title {
+            font-size: 1.3rem;
+            color: var(--cyan-blue);
+            font-weight: 300;
+            letter-spacing: 2px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            display: inline-block;
+            padding: 5px 20px;
+            margin-top: 10px;
+        }
+
+        /* 搜索框区 - 简约云纹 */
+        .search-wrapper {
+            max-width: 700px;
+            margin: 0 auto 50px auto;
+            position: relative;
+        }
+
+        .search-box {
+            background: transparent;
+            border: 2px solid var(--ink-grey);
+            border-radius: 50px; /* 圆润边框 */
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .search-box:hover, .search-box:focus-within {
+            border-color: var(--cyan-blue);
+            box-shadow: 0 8px 25px rgba(77, 122, 136, 0.15);
+        }
+
+        #poetryKeyword {
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1.3rem;
+            padding-left: 25px;
+            color: var(--ink-black);
+        }
+        
+        #poetryKeyword::placeholder {
+            color: #999;
+            font-size: 1.1rem;
+            font-style: italic;
+        }
+
+        .btn-search {
+            background-color: var(--ink-black);
+            color: white;
+            border-radius: 50px;
+            padding: 10px 35px;
+            font-family: 'Noto Serif SC', serif;
+            letter-spacing: 2px;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .btn-search:hover {
+            background-color: var(--cyan-blue);
+            transform: translateY(-1px);
+        }
+
+        /* 结果卡片 - 仿宣纸卡片 */
+        .result-card {
+            background-color: #fffef9; /* 更亮的米白 */
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 8px; /* 轻微圆角 */
+            padding: 50px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            position: relative;
+            margin-bottom: 40px;
+            /* 古卷双线边框效果 */
+            outline: 1px solid #fffef9;
+            outline-offset: -10px;
+        }
+        
+        /* 竖排文字装饰 (可选) */
+        .vertical-text-deco {
+            position: absolute;
+            right: 20px;
+            top: 40px;
+            font-family: 'Ma Shan Zheng', cursive;
+            color: rgba(0,0,0,0.05);
+            font-size: 3rem;
+            writing-mode: vertical-rl;
+            pointer-events: none;
+        }
+
+        .poem-title {
+            text-align: center;
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            color: var(--ink-black);
+        }
+
+        .poem-author {
+            text-align: center;
+            color: var(--cyan-blue);
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            font-weight: bold;
+        }
+
+        .poem-content-wrapper {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .poem-line {
+            font-size: 1.3rem;
+            line-height: 2.2;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            color: var(--ink-black);
+        }
+
+        /* 重点字词 Tooltip 样式重写 */
+        .poetry-annotation {
+            color: var(--red-seal);
+            cursor: pointer;
+            text-decoration: none;
+            border-bottom: 1px dotted var(--red-seal);
+            padding-bottom: 2px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .poetry-annotation:hover {
+            background-color: rgba(178, 70, 70, 0.05);
+        }
+
+        /* 分隔线 */
+        .ink-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border-color), transparent);
+            margin: 40px 0;
+            position: relative;
+        }
+        .ink-divider::after {
+            content: "✦";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fffef9;
+            padding: 0 10px;
+            color: var(--border-color);
+            font-size: 12px;
+        }
+
+        /* 赏析部分 */
+        .section-title {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 1.8rem;
+            color: var(--ink-black);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--cyan-blue);
+            padding-left: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .analysis-text {
+            font-size: 1.05rem;
+            line-height: 2.0;
+            color: var(--ink-grey);
+            text-align: justify;
+            text-indent: 2em;
+        }
+        
+        /* 简单返回按钮 */
+        .back-link {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: var(--ink-grey);
+            text-decoration: none;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: var(--cyan-blue);
+        }
+
+        /* Loading */
+        .loading-ink {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        .loading-text {
+            margin-top: 15px;
+            color: var(--cyan-blue);
+            font-style: italic;
+        }
+
+        /* 隐藏 Bootstrap 默认的 focus */
+        .form-control:focus {
+            box-shadow: none;
+            border-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- 装饰背景 -->
+    <div class="decoration-top-left"></div>
+    <div class="decoration-bottom-right"></div>
+
+    <a href="/" class="back-link">
+        <i class="fas fa-chevron-left me-2"></i> 返回首页
+    </a>
+    <div id="sakura-container"></div>
+    <div class="main-container">
+        
+        <!-- 头部 -->
+        <div class="header-section animate__animated animate__fadeInDown">
+            <h1 class="main-title">诗词鉴赏</h1>
+            <div class="sub-title">品读千年文脉 · 感悟诗意人生</div>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="search-wrapper animate__animated animate__fadeInUp">
+            <div class="search-box">
+                <input type="text" id="poetryKeyword" class="form-control" placeholder="请输入诗词标题或作者（如：赤壁赋）...">
+                <button class="btn-search" onclick="PoetrySearch.search()">
+                    鉴赏
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="poetryLoading" class="loading-ink">
+            <div class="spinner-border text-secondary" role="status" style="width: 2rem; height: 2rem; border-width: 2px;"></div>
+            <div class="loading-text">墨研中，请稍候...</div>
+        </div>
+
+        <!-- 结果展示区 -->
+        <div id="poetryResult" style="display: none;" class="animate__animated animate__fadeIn">
+            
+            <div class="result-card">
+                <!-- 装饰 -->
+                <div class="vertical-text-deco">诗情画意</div>
+
+                <!-- 诗词部分 -->
+                <h2 class="poem-title" id="pTitle"></h2>
+                <div class="poem-author" id="pAuthor"></div>
+                
+                <div class="poem-content-wrapper">
+                    <div id="pContent" class="poem-line"></div>
+                </div>
+
+                <div class="ink-divider"></div>
+
+                <!-- 译文 -->
+                <div class="row">
+                   <div class="col-md-12 mb-4">
+                        <div class="section-title">译文</div>
+                        <div id="pTranslation" class="analysis-text"></div>
+                   </div>
+                </div>
+
+                <div class="ink-divider"></div>
+
+                <!-- 赏析 -->
+                <div class="row">
+                    <div class="col-md-12">
+                         <div class="section-title">深度赏析</div>
+                         <div id="pAppreciation" class="analysis-text"></div>
+                    </div>
+                 </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 引入 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/poetry.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
+</body>
+</html>
