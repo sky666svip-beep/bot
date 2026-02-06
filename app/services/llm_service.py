@@ -67,7 +67,7 @@ def solve_with_vision(image_path):
         格式要求：
         {
           "answer": "最终答案",
-          "reason": "简略的解题步骤和思路",
+          "reason": "简短的解题步骤和思路",
           "category": "从[数学, 物理, 化学, 英语, 语文, 历史, 地理, 生物, 计算机, 其他]中选择一个"
         }
         """
@@ -79,7 +79,7 @@ def solve_with_vision(image_path):
             ]
         }]
         
-        resp = MultiModalConversation.call(model='qwen-vl-plus', messages=messages)
+        resp = MultiModalConversation.call(model='qwen3-vl-flash', messages=messages)
         if resp.status_code == 200 and resp.output.choices:
             content = resp.output.choices[0].message.content
             if isinstance(content, list):
@@ -129,7 +129,7 @@ def extract_text_from_image(image_path):
     try:
         image_uri = f"file://{os.path.abspath(image_path)}"
         resp = MultiModalConversation.call(
-            model='qwen-vl-plus',
+            model='qwen3-vl-flash',
             messages=[{"role": "user", "content": [{"image": image_uri}, {"text": "OCR提取图片文字，保持段落，不要废话，直接输出文本。"}]}]
         )
         if resp.status_code == 200 and resp.output.choices:
@@ -191,7 +191,7 @@ def generate_poetry_analysis(keyword):
     prompt = f"""
     请生成深度古诗词赏析。
     关键词：{keyword}
-    要求：深入探讨思想内涵、时代背景、艺术风格及文学史地位。
+    要求：深入探讨思想内涵、意象意境、语言风格及表达技巧。
     
     输出 JSON：
     {{ 
@@ -204,3 +204,48 @@ def generate_poetry_analysis(keyword):
     }}
     """
     return _call_qwen_json(prompt, system_role="古诗词鉴赏专家")
+
+def generate_formula_content(formula_context, type="explain"):
+    """
+    公式智能辅助：答疑或出题
+    formula_context: { name, formula, grade, ... }
+    type: 'explain' | 'example'
+    """
+    if type == 'explain':
+        prompt = f"""
+        请用为学生讲解以下公式。
+        公式名称：{formula_context.get('name')}
+        公式内容：{formula_context.get('formula')}
+        
+        要求：
+        1. 简短解释公式的核心含义和物理/几何意义。
+        2. 举一个简短实例简单类比。
+        3. 输出 Markdown 格式。
+        
+        请直接输出 Markdown 内容，不要包含 JSON 格式。
+        """
+        json_prompt = prompt + "\n\n请输出 JSON: { \"content\": \"markdown string...\" }"
+        res = _call_qwen_json(json_prompt, system_role="金牌理科辅导员")
+        return res.get('content', '解析生成失败')
+        
+    elif type == 'example':
+        prompt = f"""
+        请根据以下公式生成一道经典的 {formula_context.get('grade')} 难度例题。
+        公式名称：{formula_context.get('name')}
+        公式内容：{formula_context.get('formula')}
+        
+        要求：
+        1. 题目要典型，考察公式的核心用法。
+        2. 必须包含简短的解析步骤。
+        3. 输出 JSON 格式用于入库。
+        
+        输出 JSON 结构：
+        {{
+            "question": "题目题干...",
+            "options": ["A. ...", "B. ...", "C. ...", "D. ..."] (如果是选择题，否则留空数组),
+            "answer": "正确答案",
+            "reason": "简短解析步骤...",
+            "category": "{formula_context.get('category', '数学')}"
+        }}
+        """
+        return _call_qwen_json(prompt, system_role="资深出题老师")

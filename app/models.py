@@ -1,4 +1,5 @@
 #
+import json
 from datetime import datetime
 from app.extensions import db
 
@@ -134,3 +135,54 @@ class UserHistory(db.Model):
             'is_mistake': self.is_mistake,
             'time': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
+
+    # app/models.py (追加)
+
+    # === 4. [新增] 公式大全表 ===
+class Formula(db.Model):
+        """
+        公式大全表：支持语义检索和 LLM 讲解
+        """
+        __tablename__ = 'formulas'
+
+        id = db.Column(db.Integer, primary_key=True)
+        # [DELETE] code 字段已移除
+        name = db.Column(db.String(100), nullable=False, index=True)  # 例如: 勾股定理
+
+        # 分类
+        category = db.Column(db.String(50))  # 科目
+        grade = db.Column(db.String(20))  # 学段
+
+        # 核心展示
+        formula_text = db.Column(db.Text)  # 文本公式
+        latex = db.Column(db.Text)  # Latex 源码
+
+        # 复杂结构 (JSON 字符串)
+        variables = db.Column(db.Text)  # 公式变量解释
+        tags = db.Column(db.Text)  # 标签（'常用公式', '必背公式'）
+
+        # 知识详情
+        conditions = db.Column(db.Text)  # 适用条件
+        notes = db.Column(db.Text)  # 公式备注
+        derivation = db.Column(db.Text)  # 推导过程
+
+
+        # 核心：语义向量
+        embedding = db.Column(db.Text)
+
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        def to_dict(self):
+            return {
+                'id': self.id,
+                # 'code': self.code, # 已移除
+                'name': self.name,
+                'category': self.category,
+                'latex': self.latex,
+                'formula': self.formula_text,
+                'variables': json.loads(self.variables) if self.variables else [],
+                'notes': self.notes,
+                'conditions': self.conditions,
+                'derivation': self.derivation,
+                'tags': json.loads(self.tags) if self.tags else [],
+            }

@@ -1,0 +1,94 @@
+{# 
+  Gemini 风格搜索框组件
+  
+  使用方法:
+  1. 在页面 <head> 中引入 CSS:
+     <link rel="stylesheet" href="{{ url_for('static', filename='css/gemini-search.css') }}">
+  
+  2. 在需要的位置 include 此模板:
+     {% include 'components/gemini_search.html' %}
+  
+  3. 在页面底部引入 JS (可选，如果需要交互逻辑):
+     <script src="{{ url_for('static', filename='js/gemini-search.js') }}"></script>
+     
+  4. 自定义参数 (可选):
+     {% set search_placeholder = "搜索公式..." %}
+     {% set search_input_id = "formulaSearchInput" %}
+     {% set show_ai_button = true %}
+     {% include 'components/gemini_search.html' %}
+#}
+
+{# 默认值设置 #}
+{% set placeholder = search_placeholder | default("搜索...") %}
+{% set input_id = search_input_id | default("geminiSearchInput") %}
+{% set show_ai = show_ai_button | default(true) %}
+{% set show_doc_btn = show_doc_button | default(true) %}
+{% set show_img_btn = show_img_button | default(true) %}
+{% set ai_text = ai_button_text | default("AI 模式") %}
+
+<div class="gemini-search-wrapper">
+    <div class="gemini-box-container">
+        <!-- 彩虹流光层 -->
+        <div class="search-blur-layer">
+            <div class="search-gradient"></div>
+        </div>
+        <div class="search-sharp-layer">
+            <div class="search-gradient"></div>
+        </div>
+        
+        <!-- 内部白色容器 -->
+        <div class="gemini-box-inner">
+            <!-- 左侧搜索图标 -->
+            <div class="gemini-search-icon-left">
+                <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                </svg>
+            </div>
+            
+            <!-- 输入框 -->
+            <input type="text" id="{{ input_id }}" class="gemini-search-input" placeholder="{{ placeholder }}" autocomplete="off">
+            
+            <!-- 右侧功能区 -->
+            <div class="gemini-right-actions">
+                {% if show_doc_btn %}
+                <!-- 文档搜索按钮 -->
+                <button class="gemini-icon-btn" type="button" onclick="GeminiSearch.triggerDocUpload()" title="按文档搜索">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                </button>
+                {% endif %}
+                
+                {% if show_img_btn %}
+                <!-- 图片搜索按钮 -->
+                <button class="gemini-icon-btn" type="button" onclick="GeminiSearch.triggerImgUpload()" title="按图搜索">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 9C10.9 9 10 9.9 10 11C10 12.1 10.9 13 12 13C13.1 13 14 12.1 14 11C14 9.9 13.1 9 12 9ZM12 17.5C9.5 17.5 7.45 15.3 7.45 12.5C7.45 9.7 9.5 7.5 12 7.5C14.5 7.5 16.55 9.7 16.55 12.5C16.55 15.3 14.5 17.5 12 17.5ZM19 5H15.5L14 3H10L8.5 5H5C3.9 5 3 5.9 3 7V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V7C21 5.9 20.1 5 19 5Z"/>
+                    </svg>
+                </button>
+                {% endif %}
+                
+                {% if show_ai %}
+                <!-- AI 模式按钮 -->
+                <button class="gemini-ai-btn" type="button" id="geminiAiToggle">
+                    <div class="xL0qi"><div class="iydNQb"></div></div>
+                    <div class="mTurwe"><div class="iydNQb"></div></div>
+                    <div class="bvUkz"></div>
+                    <div class="u4Uk3c">
+                        <span class="PD3zdc" style="height:20px;line-height:20px;width:20px">
+                            <svg focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
+                                <g><rect fill="none" height="24" width="24"></rect></g>
+                                <g><g>
+                                    <path d="M17.5 12c0-3.04 2.46-5.5 5.5-5.5-3.04 0-5.5-2.46-5.5-5.5 0 3.04-2.46 5.5-5.5 5.5 3.04 0 5.5 2.46 5.5 5.5z"></path>
+                                    <path d="M15.65 11.58c.18-.5.27-1.03.31-1.58h-2c-.1 1.03-.51 1.93-1.27 2.69-.88.87-1.94 1.31-3.19 1.31C7.03 14 5 12.07 5 9.5 5 7.03 6.93 5 9.5 5c.46 0 .89.08 1.3.2l1.56-1.56C11.5 3.22 10.55 3 9.5 3 5.85 3 3 5.85 3 9.5S5.85 16 9.5 16c.56 0 2.26-.06 3.8-1.3l6.3 6.3 1.4-1.4-6.3-6.3c.4-.5.72-1.08.95-1.72z"></path>
+                                </g></g>
+                            </svg>
+                        </span>
+                        <span>{{ ai_text }}</span>
+                    </div>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

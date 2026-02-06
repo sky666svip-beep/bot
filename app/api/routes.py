@@ -7,7 +7,7 @@ import re
 from flask import Blueprint, request, jsonify, render_template
 from docx import Document
 from sqlalchemy import func, or_
-from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis
+from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
 from app.services.llm_service import solve_with_vision, extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
@@ -300,6 +300,186 @@ def search_poetry():
     db.session.commit()
 
     return jsonify({"success": True, "source": "llm", "data": gen})
+
+# === 公式大全模块 ===
+
+@api_bp.route('/formulas', methods=['GET'])
+def get_formulas():
+    """获取公式列表（支持分页、筛选）"""
+    # 筛选参数
+    grade = request.args.get('grade', '')
+    category = request.args.get('category', '')
+    keyword = request.args.get('keyword', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    query = Formula.query
+    
+    # 学段筛选
+    if grade:
+        query = query.filter(Formula.grade.like(f"%{grade}%"))
+    # 学科筛选
+    if category:
+        query = query.filter(Formula.category == category)
+    # 关键词搜索（名称模糊匹配）
+    if keyword:
+        query = query.filter(or_(
+            Formula.name.like(f"%{keyword}%"),
+            Formula.tags.like(f"%{keyword}%")
+        ))
+    
+    # 分页
+    pagination = query.order_by(Formula.id).paginate(page=page, per_page=per_page, error_out=False)
+    
+    # 获取所有学段和学科用于筛选器
+    all_grades = db.session.query(Formula.grade).distinct().all()
+    all_categories = db.session.query(Formula.category).distinct().all()
+    
+    return jsonify({
+        "success": True,
+        "data": [f.to_dict() for f in pagination.items],
+        "total": pagination.total,
+        "page": page,
+        "pages": pagination.pages,
+        "filters": {
+            "grades": sorted(set(g[0] for g in all_grades if g[0])),
+            "categories": sorted(set(c[0] for c in all_categories if c[0]))
+        }
+    })
+
+@api_bp.route('/formulas/<int:id>', methods=['GET'])
+def get_formula_detail(id):
+    """获取单个公式详情"""
+    formula = Formula.query.get(id)
+    if not formula:
+        return jsonify({"success": False, "message": "公式不存在"}), 404
+    
+    # 返回完整数据（包含 grade）
+    data = formula.to_dict()
+    data['grade'] = formula.grade
+    return jsonify({"success": True, "data": data})
+
+@api_bp.route('/formulas/search', methods=['POST'])
+def search_formulas():
+    """语义搜索公式"""
+    from app.services.nlp_service import nlp_engine
+    import torch
+    from sentence_transformers import util
+    import numpy as np
+    
+    query_text = request.json.get('query', '').strip()
+    category = request.json.get('category', '')
+    grade = request.json.get('grade', '')
+
+    if not query_text:
+        return jsonify({"success": False, "message": "查询内容为空"})
+    
+    # 文本预处理：清洗前缀 + 标准化（与题库搜索逻辑一致）
+    cleaned_query = nlp_engine.clean_prefix(query_text)
+    std_query = nlp_engine.standardize_text(cleaned_query)
+    print(f"🔍 [公式语义搜索] 原始: {query_text} → 预处理: {std_query}")
+    
+    # 构建基础查询并应用筛选
+    sql_query = Formula.query
+    if category:
+        sql_query = sql_query.filter(Formula.category == category)
+    if grade:
+        sql_query = sql_query.filter(Formula.grade.like(f"%{grade}%"))
+        
+    formulas = sql_query.all()
+    
+    if not formulas:
+        return jsonify({"success": True, "data": [], "message": f"在该筛选条件下无公式数据"})
+    
+    # 构建向量矩阵
+    embeddings = []
+    valid_formulas = []
+    for f in formulas:
+        if f.embedding:
+            try:
+                vec = json.loads(f.embedding)
+                embeddings.append(vec)
+                valid_formulas.append(f)
+            except:
+                continue
+    
+    if not embeddings:
+        return jsonify({"success": True, "data": [], "message": "无有效向量数据"})
+    
+    # 对预处理后的查询进行向量化
+    query_vec = nlp_engine.encode(std_query) if std_query else nlp_engine.encode(query_text)
+    if not query_vec:
+        return jsonify({"success": False, "message": "向量化失败"})
+    
+    # 计算相似度 (统一为 float32 避免类型不匹配)
+    corpus_tensor = torch.tensor(np.array(embeddings), device=nlp_engine.device, dtype=torch.float32)
+    query_tensor = torch.tensor(query_vec, device=nlp_engine.device, dtype=torch.float32)
+    scores = util.cos_sim(query_tensor, corpus_tensor)[0]
+    
+    # 排序取 Top 5
+    top_k = min(5, len(valid_formulas))
+    top_indices = torch.topk(scores, top_k).indices.tolist()
+    
+    results = []
+    for idx in top_indices:
+        score = scores[idx].item()
+        if score >= 0.5:  # 提高阈值至 0.5，过滤低相关结果
+            f = valid_formulas[idx]
+            data = f.to_dict()
+            data['grade'] = f.grade
+            data['score'] = round(score, 4)
+            results.append(data)
+    
+    return jsonify({"success": True, "data": results})
+
+@api_bp.route('/formulas/explain', methods=['POST'])
+def explain_formula():
+    """公式智能助教：讲解 & 出题"""
+    from app.services.llm_service import generate_formula_content
+    from app.services.answer_engine import save_question_to_db
+    
+    data = request.json
+    fid = data.get('id')
+    mode = data.get('type', 'explain') # explain or example
+    
+    if not fid: 
+        return jsonify({"success": False, "message": "Missing ID"})
+        
+    formula = Formula.query.get(fid)
+    if not formula:
+        return jsonify({"success": False, "message": "Formula not found"})
+        
+    # 构造上下文
+    ctx = {
+        "name": formula.name,
+        "formula": formula.formula_text,
+        "grade": formula.grade,
+        "category": formula.category
+    }
+    
+    # 调用 LLM
+    result = generate_formula_content(ctx, mode)
+    
+    if mode == 'example':
+        # 如果是生成例题，需要解析并入库
+        # result 应该是一个 JSON dict
+        if isinstance(result, dict):
+            # 存入题库
+            q_id = save_question_to_db(
+                question=result.get('question'),
+                answer=result.get('answer'),
+                reason=result.get('reason'),
+                options=result.get('options', []),
+                category=formula.category
+            )
+            # 返回给前端展示，并附带题库ID（方便后续可能的跳转）
+            return jsonify({"success": True, "data": result, "db_id": q_id})
+        else:
+            return jsonify({"success": False, "message": "生成格式错误"})
+            
+    else:
+        # 讲解模式，直接返回 Markdown 文本
+        return jsonify({"success": True, "data": result})
 
 # === 页面渲染路由 ===
 @main.route('/view-history')

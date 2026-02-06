@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 # 将项目根目录加入路径
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '')))
 
 from app.extensions import db
 from app.models import Formula
@@ -206,6 +206,6 @@ class FormulaImporter:
 
 
 if __name__ == '__main__':
-    target_file = os.path.join(os.getcwd(),  'formulas.js')
+    target_file = os.path.join(os.getcwd(), 'data/formulasDB.js')
     if len(sys.argv) > 1: target_file = sys.argv[1]
     FormulaImporter(target_file).run()

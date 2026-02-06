@@ -44,9 +44,20 @@ const SearchEngine = {
         resultArea.style.display = 'block';
 
         // 2. 使用 marked 解析 Markdown 并注入 HTML
+        // 辅助处理函数：防止 Markdown 吃掉 LaTeX 反斜杠，并自动包裹公式
+        const _preprocessMarkdown = (text) => {
+            if (!text) return "";
+            let processed = text.replace(/\\/g, "\\\\");
+            
+            if (/\\/.test(text) && !/\$/.test(text)) {
+                processed = `$$${processed}$$`;
+            }
+            return processed;
+        };
+
         if (typeof marked !== 'undefined') {
-            targetAnswer.innerHTML = marked.parse(data.answer || "无答案内容");
-            explanation.innerHTML = marked.parse(data.reason || "暂无详细解析");
+            targetAnswer.innerHTML = marked.parse(_preprocessMarkdown(data.answer || "无答案内容"));
+            explanation.innerHTML = marked.parse(_preprocessMarkdown(data.reason || "暂无详细解析"));
         } else {
             targetAnswer.innerText = data.answer;
             explanation.innerText = data.reason;

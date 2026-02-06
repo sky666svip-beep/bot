@@ -1,0 +1,228 @@
+/**
+ * Gemini 风格搜索框组件样式
+ * 引用方式: <link rel="stylesheet" href="{{ url_for('static', filename='css/gemini-search.css') }}">
+ */
+
+/* =========================================
+   0. 变量定义
+   ========================================= */
+:root {
+    --XKMDxc: #ffffff;
+    --Lm570b: rgba(60, 64, 67, 0.08);
+    --bbQxAb: #5f6368;
+    --active-blue: #1a73e8;
+}
+
+/* =========================================
+   1. 搜索框容器
+   ========================================= */
+.gemini-search-wrapper {
+    width: 100%;
+    max-width: 680px;
+    position: relative;
+}
+
+.gemini-box-container {
+    position: relative;
+    padding: 2px;
+    border-radius: 999px;
+    background: #e0e0e0;
+    transition: box-shadow 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    z-index: 0;
+}
+
+.gemini-box-container:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+/* =========================================
+   2. 彩虹流光特效
+   ========================================= */
+.search-blur-layer {
+    position: absolute; inset: 0; border-radius: 999px; overflow: hidden;
+    opacity: 1; filter: blur(4px); transition: opacity 0.3s; pointer-events: none; z-index: -1;
+}
+
+.search-sharp-layer {
+    position: absolute; inset: 0; border-radius: 999px; overflow: hidden;
+    opacity: 1; transition: opacity 0.3s; pointer-events: none; z-index: -1;
+}
+
+.search-gradient {
+    background: conic-gradient(
+        #3186ff00 0deg,
+        #34a853 36deg,
+        #ffd314 60deg,
+        #ff4641 84deg,
+        #3186ff 108deg,
+        #5f63db 132deg,
+        #9b72cb 156deg,
+        #3186ff 180deg,
+        #3186ff00 324deg,
+        #3186ff00 360deg
+    );
+    height: 200%;
+    top: -50%;
+    right: 0; bottom: 0; left: 0;
+    position: absolute;
+    scale: 3 1;
+    transform: rotate(180deg);
+    animation: gemini-rotate 7000ms linear infinite;
+}
+
+@keyframes gemini-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 内部白色容器 */
+.gemini-box-inner {
+    position: relative;
+    background: #fff;
+    border-radius: 999px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 14px;
+}
+
+/* =========================================
+   3. 内部元素
+   ========================================= */
+.gemini-search-icon-left {
+    color: #9aa0a6;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    padding-left: 2px;
+}
+.gemini-search-icon-left svg { width: 20px; height: 20px; fill: currentColor; }
+
+.gemini-search-input {
+    flex: 1;
+    font-size: 16px;
+    color: #202124;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    min-width: 100px;
+    font-family: arial, sans-serif;
+}
+.gemini-search-input::placeholder { color: #9aa0a6; }
+
+.gemini-right-actions { display: flex; align-items: center; }
+
+.gemini-icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #5f6368;
+    margin-left: 4px;
+    background: transparent;
+    border: none;
+}
+.gemini-icon-btn:hover { background-color: #f1f3f4; color: #1a73e8; }
+.gemini-icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+/* =========================================
+   4. AI 模式按钮
+   ========================================= */
+.gemini-ai-btn {
+    align-self: center;
+    background: inherit;
+    border-radius: 100px;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    margin-left: 8px;
+    padding: 0 12px 0 10px;
+    position: relative;
+    height: 36px;
+    border: none;
+    display: flex;
+    align-items: center;
+}
+
+.gemini-ai-btn:hover::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 100px;
+    background: var(--Lm570b);
+    z-index: 0;
+}
+
+.gemini-ai-btn .xL0qi, .gemini-ai-btn .mTurwe {
+    overflow: hidden;
+    border-radius: 100px;
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    pointer-events: none;
+}
+.gemini-ai-btn .xL0qi { opacity: 0.35; filter: blur(2px); }
+
+.gemini-ai-btn .iydNQb {
+    background: conic-gradient(#3186ff00 0deg, #34a853 43deg, #ffd314 65deg, #ff4641 105deg, #3186ff 144deg, #3186ff 180deg, #3186ff00 324deg, #3186ff00 360deg);
+    height: 200%;
+    top: -50%; right: 0; bottom: 0; left: 0;
+    position: absolute;
+    scale: 2 1;
+    opacity: 0;
+    transform: rotate(180deg);
+    transition: opacity 400ms linear;
+}
+
+.gemini-ai-btn:hover .mTurwe .iydNQb, 
+.gemini-ai-btn:hover .xL0qi .iydNQb,
+.gemini-ai-btn.active .mTurwe .iydNQb,
+.gemini-ai-btn.active .xL0qi .iydNQb { 
+    opacity: 1; 
+    animation: gemini-rotate 2000ms cubic-bezier(0.20, 0.00, 0.00, 1.00) infinite forwards;
+}
+
+/* 未激活时的灰色蒙版 */
+.gemini-ai-btn:not(.active)::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 100px;
+    background-color: rgba(241, 243, 244, 0.9);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.gemini-ai-btn.active::after,
+.gemini-ai-btn:hover::after {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.gemini-ai-btn .bvUkz {
+    position: absolute;
+    top: 2px; right: 2px; bottom: 2px; left: 2px;
+    border-radius: 100px;
+    background: var(--XKMDxc);
+    z-index: 1;
+}
+
+.gemini-ai-btn .u4Uk3c {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    color: #1f1f1f;
+}
+
+.gemini-ai-btn .PD3zdc { padding-right: 4px; display: flex; align-items: center; }
+
+.gemini-ai-btn.active .u4Uk3c { color: #1a73e8; }
+.gemini-ai-btn.active .bvUkz { background: #fff; }

@@ -138,27 +138,23 @@ def solve_pipeline(question_text, options=None):
     except Exception as e:
         return {"answer": "出错", "reason": f"AI服务异常: {str(e)}", "source": "系统错误"}
     # --- 第四步：存入数据库与索引 ---
+    
+    ai_answer = ai_res.get('answer', '略')
+    # 处理字典类型的答案
+    if isinstance(ai_answer, dict):
+        ai_answer = json.dumps(ai_answer, ensure_ascii=False)
+        
+    # 调用封装好的入库函数
+    save_question_to_db(
+        question=question_text, 
+        answer=ai_answer, 
+        reason=ai_res.get('reason', 'AI生成'), 
+        options=options, 
+        category=ai_category
+    )
+    
+    # 存入历史记录 (这是 UserHistory, 区别于 QuestionBank)
     try:
-        # 1. 生成向量
-        vector = nlp_engine.encode(question_text)
-        # 计算标准化指纹
-        std_q_text = nlp_engine.standardize_text(question_text)
-        ai_answer = ai_res.get('answer', '略')
-        # 处理字典类型的答案
-        if isinstance(ai_answer, dict):
-            ai_answer = json.dumps(ai_answer, ensure_ascii=False)
-        # 2. 存入 SQL 数据库
-        new_q = QuestionBank(
-            question=question_text,
-            std_q=std_q_text,
-            options=json.dumps(options) if options else None,
-            answer=ai_answer,
-            reason=ai_res.get('reason', 'AI生成'),
-            category=ai_category,
-            embedding=json.dumps(vector)  # 存入向量字符串
-        )
-        db.session.add(new_q)
-        # 3. 存入历史记录
         save_to_history(
             question_text,
             ai_answer,
@@ -166,21 +162,9 @@ def solve_pipeline(question_text, options=None):
             f"AI {ai_res.get('type', '智能分析')}",
             ai_category
         )
-
         db.session.commit()
-        print("💾 新题目已同步至本地题库")
-        # 4. 热更新显存索引 (这样下次不用重启就能搜到)
-        nlp_engine.add_to_index(
-            question=question_text,
-            embedding=vector,  # 传入 List[float]
-            answer=ai_answer,  # 传入处理后的字符串
-            reason=ai_res.get('reason'),
-            options=options
-        )
-        print("✨ 显存索引已热更新")
     except Exception as e:
-        db.session.rollback()
-        print(f"自动录入失败: {e}")
+        print(f"历史记录保存失败: {e}")
     return {
         "answer": ai_res.get('answer'),
         "reason": ai_res.get('reason'),
@@ -199,3 +183,47 @@ def save_to_history(q, a, r, source, category='其他'):
         category=category
     )
     db.session.add(history)
+
+def save_question_to_db(question, answer, reason, options=None, category='其他'):
+    """
+    封装入库逻辑：生成向量 -> 存 SQL -> 更新显存索引
+    供 solve_pipeline 和 formula_example_generation 共用
+    """
+    try:
+        # 1. 生成向量
+        vector = nlp_engine.encode(question)
+        # 计算标准化指纹
+        std_q_text = nlp_engine.standardize_text(question)
+        
+        # 处理字典类型的答案/选项
+        if isinstance(answer, dict):
+            answer = json.dumps(answer, ensure_ascii=False)
+        opts_json = json.dumps(options, ensure_ascii=False) if options else None
+
+        # 2. 存入 SQL 数据库
+        new_q = QuestionBank(
+            question=question,
+            std_q=std_q_text,
+            options=opts_json,
+            answer=answer,
+            reason=reason,
+            category=category,
+            embedding=json.dumps(vector.tolist() if isinstance(vector, np.ndarray) else vector) 
+        )
+        db.session.add(new_q)
+        db.session.commit()
+        
+        # 3. 热更新显存索引
+        nlp_engine.add_to_index(
+            question=question,
+            embedding=vector, 
+            answer=answer, 
+            reason=reason,
+            options=options
+        )
+        print(f"💾 [入库成功] ID: {new_q.id} - {question[:20]}...")
+        return new_q.id
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ 入库失败: {e}")
+        return None

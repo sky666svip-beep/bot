@@ -192,10 +192,149 @@ html, body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 .btn-modern:hover { transform: translateY(-3px); }
-.btn-primary-gradient { background: linear-gradient(135deg, #0d6efd 0%, #0043a8 100%); color: white; }
-.btn-outline-primary { color: #0d6efd; border: 2px solid #0d6efd; background: transparent; }
-.btn-outline-primary:hover { background-color: #0d6efd; color: white; }
+/* 公式手册按钮 */
+.btn-formula-gradient { 
+    background: transparent; 
+    color: #1E88E5!important;
+    border: 2px solid #64B5F6;
+}
+.btn-formula-gradient:hover {
+    background: linear-gradient(135deg, #42A5F5 0%, #42A5F5 100%);
+    box-shadow: 0 6px 12px rgba(13, 110, 253, 0.2);
+    color: white !important;
+    border-color: transparent;
+}
+
+/* 给立即搜题按钮 */
+.btn-info-soft {
+    background: white;
+    color: #0d6efd !important;
+    border: 2px solid rgba(13, 110, 253, 0.3);
+}
+.btn-info-soft:hover {
+    background: #f8f9fa;
+    border-color: #0d6efd;
+}
+
+/* 文档识别按钮 */
+.btn-doc-corner {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    color: #0d6efd;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+}
+.btn-doc-corner:hover {
+    background: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+/* 图片识别按钮  */
+.btn-camera-outline {
+    background: transparent;
+    border: 2px solid #64B5F6;
+    color: #1E88E5;
+}
+.btn-camera-outline:hover {
+    background: linear-gradient(135deg, #64B5F6 0%, #64B5F6 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(23, 170, 224, 0.3);
+}
 .copy-btn { border: none; background: transparent; color: #6c757d; cursor: pointer; padding: 5px 10px; }
+   
+
+/* 为图片识别按钮添加脉冲特效（深蓝色） */
+.btn-modern.btn-formula-gradient:hover {
+    animation: pulse-blue 1.2s infinite;
+}
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4); }
+    60% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+}
+/* 相机图标旋转动画 */
+.btn-camera-outline:hover .fa-camera {
+    animation: rotate360 1.5s ease-in-out;
+}
+@keyframes rotate360 {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 公式手册图标缩放动画 */
+.btn-formula-gradient:hover .fa-graduation-cap {
+    animation: pulseIcon 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseIcon {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+/* =========================================
+   彩虹流光按钮 - 复用 gemini-search.css 的动画
+   ========================================= */
+.rainbow-btn-wrapper {
+    position: relative;
+    padding: 2px;
+    border-radius: 12px;
+    background: #e0e0e0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    cursor: pointer;
+    min-height: 48px;
+}
+
+/* 复用 gemini-search.css 的光效层，只调整圆角 */
+.rainbow-blur-layer,
+.rainbow-sharp-layer {
+    position: absolute; inset: 0; border-radius: 12px; overflow: hidden;
+    pointer-events: none; z-index: 0;
+}
+.rainbow-blur-layer { filter: blur(4px); }
+
+/* 复用 gemini-search.css 的渐变动画 */
+.rainbow-gradient {
+    background: conic-gradient(
+        #3186ff00 0deg, #34a853 36deg, #ffd314 60deg, #ff4641 84deg,
+        #3186ff 108deg, #5f63db 132deg, #9b72cb 156deg, #3186ff 180deg,
+        #3186ff00 324deg, #3186ff00 360deg
+    );
+    height: 200%; top: -50%; right: 0; bottom: 0; left: 0;
+    position: absolute; scale: 3 1;
+    animation: rainbow-rotate 5000ms linear infinite;
+}
+@keyframes rainbow-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 内部白色按钮 */
+.rainbow-btn-inner {
+    position: relative;
+    background: #fff !important;
+    border-radius: 10px;
+    z-index: 1;
+    border: none !important;
+    color: #1a73e8 !important;
+    font-weight: 600;
+    font-size: 18px;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+/* 禁用所有悬停效果 */
+.rainbow-btn-wrapper:hover,
+.rainbow-btn-inner:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+}
+.rainbow-btn-wrapper:active .rainbow-btn-inner {
+    transform: scale(0.98) !important;
+}
 
 /* 列表项 (List Group) */
 .list-group-item {
