@@ -88,8 +88,8 @@ def solve_pipeline(question_text, options=None):
     best_match, vector_score = nlp_engine.search_best_match(question_text, threshold=0.80)
     print(f"--- 搜索调试1 ---")
     if best_match:
-        print(f"候选题目: {best_match['question']}")
-        print(f"候选标准: {best_match.get('std_q', '无')}")
+        print(f"候选原始题目（未预处理）: {best_match['question']}")
+        print(f"候选标准（预处理后）: {best_match.get('std_q', '无')}")
     print(f"----------------")
 
     if best_match:
@@ -101,10 +101,9 @@ def solve_pipeline(question_text, options=None):
         )
         print(f"--- 搜索调试2 ---")
         print(f"向量原始分: {vector_score:.4f} -> 最终判定分: {final_score:.4f}")
-        print(f"候选题目: {best_match['question']}")
 
         # 🛡最终门槛判定
-        if final_score >= 0.85:
+        if final_score >= 0.80:
             user_nums = extract_core_numbers(question_text)
             match_nums = extract_core_numbers(best_match['question'])
 
@@ -129,7 +128,7 @@ def solve_pipeline(question_text, options=None):
                     "options": parsed_opts
                 }
         else:
-            print(f"📉 判定分不足 ({final_score:.4f} < 0.85)，放弃本地结果")
+            print(f"📉 判定分不足 ({final_score:.4f} < 0.80)，放弃本地结果")
         # --- 第三步：AI 兜底解题 ---
     print("☁️ 正在调用 AI 实时解答...")
     try:
@@ -186,14 +185,19 @@ def save_to_history(q, a, r, source, category='其他'):
 
 def save_question_to_db(question, answer, reason, options=None, category='其他'):
     """
-    封装入库逻辑：生成向量 -> 存 SQL -> 更新显存索引
+    封装入库逻辑：去重检查 -> 生成向量 -> 存 SQL -> 更新显存索引
     供 solve_pipeline 和 formula_example_generation 共用
     """
     try:
+        # 0. 计算标准化指纹并检查去重
+        std_q_text = nlp_engine.standardize_text(question)
+        existing = QuestionBank.query.filter_by(std_q=std_q_text).first()
+        if existing:
+            print(f"⚠️ [跳过入库] 题目已存在 ID: {existing.id} - {question[:20]}...")
+            return existing.id
+        
         # 1. 生成向量
         vector = nlp_engine.encode(question)
-        # 计算标准化指纹
-        std_q_text = nlp_engine.standardize_text(question)
         
         # 处理字典类型的答案/选项
         if isinstance(answer, dict):

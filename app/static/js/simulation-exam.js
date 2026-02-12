@@ -104,7 +104,12 @@ const ExamApp = {
 
         // 渲染完成后触发 MathJax
         if (window.MathJax) {
-            MathJax.typesetPromise([container]).catch(err => console.log('MathJax error:', err));
+            // 兼容 MathJax 3.x Promsie 和 2.x Hub
+            if (MathJax.typesetPromise) {
+                MathJax.typesetPromise([container]).catch(err => console.log('MathJax error:', err));
+            } else if (MathJax.Hub) {
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, container]);
+            }
         }
     },
     
@@ -318,7 +323,7 @@ const ExamApp = {
                     <p class="card-text fw-bold">${r.question}</p>
                     <div class="row g-2 mb-2">
                         <div class="col-md-6">
-                            <div class="p-2 border rounded bg-light">
+                            <div class="p-2 border rounded">
                                 <small class="text-muted d-block">你的答案</small>
                                 <span class="text-dark fw-bold">
                                     ${r.my_answer_raw || '未作答'}

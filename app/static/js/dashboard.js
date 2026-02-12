@@ -50,9 +50,9 @@ const Dashboard = {
                 name: '题目类型',
                 type: 'pie',
                 radius: [20, 100],
-                center: ['50%', '45%'],
+                center: ['50%', '40%'],
                 roseType: 'area', // 玫瑰图模式
-                itemStyle: { borderRadius: 5 },
+                itemStyle: { borderRadius: 7 },
                 data: pieData.length ? pieData : [{ name: '暂无数据', value: 0 }]
             }]
         });
@@ -84,7 +84,7 @@ const Dashboard = {
                 top: 50,
                 left: 30,
                 right: 30,
-                cellSize: ['auto', 20], // 这里微调了一下高度，适配卡片
+                cellSize: ['auto', 25], // 这里微调了一下高度，适配卡片
                 range: currentYear,
                 itemStyle: { borderWidth: 0.5 },
                 yearLabel: { show: false }

@@ -175,7 +175,6 @@ class Formula(db.Model):
         def to_dict(self):
             return {
                 'id': self.id,
-                # 'code': self.code, # 已移除
                 'name': self.name,
                 'category': self.category,
                 'latex': self.latex,
@@ -186,3 +185,23 @@ class Formula(db.Model):
                 'derivation': self.derivation,
                 'tags': json.loads(self.tags) if self.tags else [],
             }
+
+# === 5. [新增] 单词表 (映射现有表) ===
+class Vocabulary(db.Model):
+    """
+    单词表：映射现有 vocabulary 表
+    """
+    __tablename__ = 'vocabulary'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    word = db.Column(db.Text, nullable=False, unique=True)
+    phonetic = db.Column(db.Text)
+    definition = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'word': self.word,
+            'phonetic': self.phonetic,
+            'definition': self.definition
+        }

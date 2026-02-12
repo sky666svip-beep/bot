@@ -6,28 +6,41 @@
 	<title>自动答题助手</title>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1, 1000) | random }}">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.0">
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 <body>
+	<!-- New Background Blobs -->
+	<div class="bg-blob-container">
+		<div class="bg-blob bg-blob-purple" style="top: -10%; left: -10%;"></div>
+		<div class="bg-blob bg-blob-blue" style="bottom: -10%; right: -10%;"></div>
+	</div>
+
 	<div id="sakura-container"></div>
 	<div class="clock-container">
 		<span id="hour" class="clock-unit">00</span><span class="colon">:</span>
 		<span id="minute" class="clock-unit">00</span><span class="colon">:</span>
 		<span id="second" class="clock-unit">00</span>
 	</div>
-	<div class="container py-5">
+	<div class="container pt-3 pb-5">
 		<div class="row justify-content-center">
 			<div class="col-lg-9 col-md-11">
-				<div class="card main-card p-4 mb-4 slide-in">
-					<div class="text-center mb-4">
-						<h2 class="fw-bold text-primary gradient-text">自动答题助手</h2>
-						<p class="text-muted small">基于 LLM 矩阵运算与视觉大模型的全能解题引擎</p>
-					</div>
-					<div class="mb-3 position-relative">
+				<!-- Header (Moved Outside Card) -->
+				<div class="text-center mb-5 mt-4 space-y-3 slide-in">
+					<h1 class="redesign-header-title">
+						智能答题助手
+					</h1>
+					<p class="redesign-header-subtitle">
+						机器学习赋能 · 多模态融合解题引擎
+					</p>
+				</div>
+
+				<div class="card main-card p-5 mb-4 slide-in "style="margin-top: -35px;">
+					<div class="mb-3 position-relative"style="margin-top: -15px; margin-bottom: 10px;">
 						<textarea id="rawText" class="form-control custom-textarea" rows="4" placeholder="✨ 请在此输入题目文本，或粘贴题目内容..."></textarea>
-						<button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" onclick="document.getElementById('rawText').value=''" title="清空">
+						<button class="btn btn-sm btn-clear-corner position-absolute top-0 end-0 m-2" onclick="document.getElementById('rawText').value=''" title="清空">
 							<i class="fas fa-times"></i>
 						</button>
 						<!-- 文档识别按钮：移动到输入框右下角 -->
@@ -38,10 +51,9 @@
 					</div>
 					<div class="row g-2 mb-3">
 						<div class="col-md-6">
-							<div class="rainbow-btn-wrapper w-100 h-100" onclick="SearchEngine.processAndSolve()">
-								<div class="rainbow-blur-layer"><div class="rainbow-gradient"></div></div>
-								<div class="rainbow-sharp-layer"><div class="rainbow-gradient"></div></div>
-								<button id="submitBtn" class="btn rainbow-btn-inner w-100 h-100">
+							<div class="glow-btn-container" onclick="SearchEngine.processAndSolve()">
+								<div class="glow-btn-border"></div>
+								<button id="submitBtn" class="glow-btn-inner">
 									<i class="fas fa-search me-2"></i> 立即搜题
 								</button>
 							</div>
@@ -57,9 +69,11 @@
 							</a>
 						</div>
 					</div>
-					<div id="statusMessage" class="alert alert-info text-center py-2" style="display: none;">
-						<div class="spinner-border spinner-border-sm me-2"></div>
-						<span id="statusText">正在解答中...</span>
+					<div id="statusMessage" class="status-message-modern">
+						<div class="status-content">
+							<div class="loader-spinner"></div>
+							<span id="statusText">正在解析题目...</span>
+						</div>
 					</div>
 				</div>
 				<div id="resultArea" class="mt-4 mb-4 animate__animated animate__fadeIn" style="display: none;">
@@ -92,16 +106,17 @@
 					</div>
 				</div>
 			</div>
-				<div class="category-nav-container mb-5 slide-in" style="animation-delay: 0.1s;">
-					<div class="row row-cols-2 row-cols-md-5 g-2 g-md-3 position-relative">
-						<div class="col position-relative">
-							<button class="nav-category-btn" type="button" data-bs-toggle="collapse" data-bs-target="#menuChinese" aria-expanded="false">
-								<div class="icon-box bg-danger-subtle text-danger rounded-circle">
-									<i class="fas fa-book"></i>
+				<div class="category-nav-container mb-4 slide-in" style="animation-delay: 0.1s;">
+					<div class="row row-cols-2 row-cols-md-5 g-3 position-relative">
+						<!-- Chinese -->
+						<div class="col position-relative subject-card">
+							<button class="nav-category-btn" type="button">
+								<div class="icon-box bg-danger-subtle text-danger">
+									<i class="fas fa-book-open"></i>
 								</div>
-								<h6 class="fw-bold text-dark">语文</h6>
+								<h6 class="fw-bold">语文</h6>
 							</button>
-							<div class="collapse compact-sub-menu" id="menuChinese">
+							<div class="compact-sub-menu">
 								<a href="{{ url_for('main.essay_correction_page') }}" class="sub-func-btn-compact">
 									<i class="fas fa-pen-nib text-danger"></i>
 									<span>作文批改</span>
@@ -116,14 +131,16 @@
 								</a>
 							</div>
 						</div>
-						<div class="col position-relative">
-							<button class="nav-category-btn" type="button" data-bs-toggle="collapse" data-bs-target="#menuMath" aria-expanded="false">
-								<div class="icon-box bg-primary-subtle text-primary rounded-circle">
+						
+						<!-- Math -->
+						<div class="col position-relative subject-card">
+							<button class="nav-category-btn" type="button">
+								<div class="icon-box bg-primary-subtle text-primary">
 									<i class="fas fa-square-root-alt"></i>
 								</div>
-								<h6 class="fw-bold text-dark">数学</h6>
+								<h6 class="fw-bold">数学</h6>
 							</button>
-							<div class="collapse compact-sub-menu" id="menuMath">
+							<div class="compact-sub-menu">
 								<a href="/formulas" class="sub-func-btn-compact">
 									<i class="fas fa-atom text-primary"></i>
 									<span>公式手册</span>
@@ -134,14 +151,16 @@
 								</a>
 							</div>
 						</div>
-						<div class="col position-relative">
-							<button class="nav-category-btn" type="button" data-bs-toggle="collapse" data-bs-target="#menuEnglish" aria-expanded="false">
-								<div class="icon-box bg-info-subtle text-info rounded-circle">
+
+						<!-- English -->
+						<div class="col position-relative subject-card">
+							<button class="nav-category-btn" type="button">
+								<div class="icon-box bg-info-subtle text-info">
 									<i class="fas fa-language"></i>
 								</div>
-								<h6 class="fw-bold text-dark">英语</h6>
+								<h6 class="fw-bold">英语</h6>
 							</button>
-							<div class="collapse compact-sub-menu" id="menuEnglish">
+							<div class="compact-sub-menu">
 								<a href="{{ url_for('main.essay_correction_page') }}" class="sub-func-btn-compact">
 									<i class="fas fa-spell-check text-info"></i>
 									<span>作文批改</span>
@@ -150,16 +169,22 @@
 									<i class="fas fa-globe text-info"></i>
 									<span>作文大全</span>
 								</a>
+								<a href="/word_match" class="sub-func-btn-compact">
+									<i class="fas fa-gamepad text-info"></i>
+									<span>单词消消乐</span>
+								</a>
 							</div>
 						</div>
-						<div class="col position-relative">
-							<button class="nav-category-btn" type="button" data-bs-toggle="collapse" data-bs-target="#menuTools" aria-expanded="false">
-								<div class="icon-box bg-secondary-subtle text-secondary rounded-circle">
+
+						<!-- Tools -->
+						<div class="col position-relative subject-card">
+							<button class="nav-category-btn" type="button">
+								<div class="icon-box bg-secondary-subtle text-secondary">
 									<i class="fas fa-toolbox"></i>
 								</div>
-								<h6 class="fw-bold text-dark">学习工具</h6>
+								<h6 class="fw-bold">学习工具</h6>
 							</button>
-							<div class="collapse compact-sub-menu menu-end" id="menuTools" style="right: 0; left: auto;">
+							<div class="compact-sub-menu menu-end" style="right: 0; left: auto; transform: translateY(10px);">
 								<a href="{{ url_for('main.view_history') }}" class="sub-func-btn-compact">
 									<i class="fas fa-history text-secondary"></i>
 									<span>历史记录</span>
@@ -173,17 +198,19 @@
 									<span>学习计划</span>
 								</a>
 								<a href="https://www.kiddoworksheets.com/" target="_blank" class="sub-func-btn-compact">
-                                    <i class="fas fa-book text-secondary"></i>
+                                    <i class="fas fa-print text-secondary"></i>
                                     <span>练习本定制</span>
 								</a>
 							</div>
 						</div>
+
+						<!-- Mistake Notebook -->
 						<div class="col">
 							<button class="nav-category-btn" onclick="Notebook.refreshAll(); new bootstrap.Offcanvas(document.getElementById('notebookDrawer')).show();">
-								<div class="icon-box bg-warning-subtle text-warning rounded-circle">
+								<div class="icon-box bg-warning-subtle text-warning">
 									<i class="fas fa-edit"></i>
 								</div>
-								<h6 class="fw-bold text-dark">错题本</h6>
+								<h6 class="fw-bold">错题本</h6>
 							</button>
 						</div>
 					</div>
@@ -204,7 +231,7 @@
 					</div>
 				</div>
 			</div>
-			<p class="text-center mt-4 text-muted small opacity-50">© 2026 AI Learning Assistant</p>
+			<p class="text-center mt-4 text-muted small opacity-50">© 2026 Learning Assistant</p>
 		</div>
 	</div>
 	<div class="offcanvas offcanvas-start" tabindex="-1" id="notebookDrawer" style="width: 400px;">
@@ -236,14 +263,6 @@
 		            displayMath: [['$$', '$$'], ['\\[', '\\]']]
 		        }
 		    };
-		document.addEventListener('click', function(e) {
-		    // 如果点击的不是按钮也不是菜单内部，则关闭所有展开的菜单
-		    if (!e.target.closest('.nav-category-btn') && !e.target.closest('.compact-sub-menu')) {
-		        document.querySelectorAll('.compact-sub-menu.show').forEach(function(el) {
-		            new bootstrap.Collapse(el, { toggle: false }).hide();
-		        });
-		    }
-		});
 	</script>
 	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 </body>

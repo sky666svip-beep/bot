@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词消消乐</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/word_match.css') }}">
+</head>
+<body>
+    <div class="container game-container">
+        <!-- 1. Editable Title -->
+        <h1 id="gameTitle" contenteditable="true">单词消消乐</h1>
+        
+        <!-- 2. Menu Bar -->
+        <div class="menu-bar">
+            <div class="slider-container">
+                <label for="pairCount">单词数量: <span id="pairCountValue">10</span>对</label>
+                <input type="range" id="pairCount" min="5" max="50" value="10">
+            </div>
+            <button id="startBtn" class="btn-primary">开始游戏</button>
+        </div>
+
+        <!-- 3. Timer -->
+        <div class="timer-display">
+            耗时：<span id="timerSeconds">0.0</span> 秒
+        </div>
+
+        <!-- 4. Word Panel -->
+        <div id="wordPanel" class="word-panel">
+            <!-- Blocks will be injected here by JS -->
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2>🎉 挑战成功！</h2>
+            <p>本次耗时：<span id="finalTime"></span> 秒</p>
+            <div class="modal-actions">
+                <button id="continueBtn" class="btn-primary">继续挑战</button>
+                <button id="restartBtn" class="btn-secondary">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/word_match.js') }}"></script>
+</body>
+</html>

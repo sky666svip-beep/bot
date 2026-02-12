@@ -156,7 +156,8 @@ class NLPService:
                 load_path,
                 device=self.device,
                 trust_remote_code=True,
-                local_files_only=is_local_run
+                local_files_only=is_local_run,
+                tokenizer_kwargs={"fix_mistral_regex": True}
             )
             # 4. 获取并保存模型维度
             self.embedding_dim = self.model.get_sentence_embedding_dimension()
@@ -235,7 +236,7 @@ class NLPService:
         :return: 修正后的最终得分
         """
         # 1. 强制 1.0 逻辑保持不变 (如果是精确匹配，无需校验)
-        if original_score >= 0.98:
+        if original_score >= 0.95:
             return original_score
         # --- A. 准备数据 ---
         # 使用 lcut 得到列表，转为 set 方便计算交集
@@ -266,8 +267,8 @@ class NLPService:
         else:
             coverage = 0
         # --- E. 最终分数融合 ---
-        # 公式：(向量分 * 0.9) + (覆盖率 * 0.1) - 总惩罚
-        base_score = (original_score * 0.9) + (coverage * 0.1)
+        # 公式：(向量分 * 0.95) + (覆盖率 * 0.05) - 总惩罚
+        base_score = (original_score * 0.95) + (coverage * 0.05)
         final_score = base_score - total_penalty
         # 限制范围在 0.0 到 1.0 之间
         final_score = max(0.0, min(1.0, final_score))

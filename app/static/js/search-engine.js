@@ -46,7 +46,11 @@ const SearchEngine = {
         // 2. 使用 marked 解析 Markdown 并注入 HTML
         // 辅助处理函数：防止 Markdown 吃掉 LaTeX 反斜杠，并自动包裹公式
         const _preprocessMarkdown = (text) => {
+            // 确保是字符串类型
             if (!text) return "";
+            if (typeof text !== 'string') {
+                text = String(text);
+            }
             let processed = text.replace(/\\/g, "\\\\");
             
             if (/\\/.test(text) && !/\$/.test(text)) {

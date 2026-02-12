@@ -7,7 +7,7 @@ import re
 from flask import Blueprint, request, jsonify, render_template
 from docx import Document
 from sqlalchemy import func, or_
-from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula
+from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
 from app.services.llm_service import solve_with_vision, extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
@@ -219,25 +219,36 @@ def generate_simulation_api():
     return jsonify({"success": True, "questions": generate_exam_questions(request.json)})
 
 @api_bp.route('/simulation/submit', methods=['POST'])
-
 def submit_simulation_api():
     """提交并保存考试结果"""
+    from app.services.answer_engine import save_question_to_db
+    
     data = request.json or {}
     results = data.get('results', [])
     saved_ids = []
-    # 存入 UserHistory历史记录
+    
     for item in results:
+        # 1. 存入 UserHistory 历史记录
         history = UserHistory(
             question=item.get('question'),
             answer=item.get('answer'),
             reason=item.get('reason'),
             source='模拟考试',
             category=item.get('category', '其他'),
-            is_mistake=False # 所以这里默认 is_mistake=False，由用户手动点收藏/错题
+            is_mistake=False  # 默认 is_mistake=False，由用户手动点收藏/错题
         )
         db.session.add(history)
         db.session.flush()
         saved_ids.append({"temp_id": item.get('temp_id'), "db_id": history.id})
+        
+        # 2. 同时存入 QuestionBank 全局题库（支持语义检索）
+        save_question_to_db(
+            question=item.get('question'),
+            answer=item.get('answer'),
+            reason=item.get('reason'),
+            options=item.get('options'),  # 如果有选项的话
+            category=item.get('category', '模拟考试')
+        )
         
     db.session.commit()
     return jsonify({"success": True, "saved_ids": saved_ids})
@@ -496,3 +507,26 @@ def study_plan_page(): return render_template('study_plan.html')
 def simulation_exam_page(): return render_template('simulation_exam.html')
 @main.route('/poetry')
 def poetry_page(): return render_template('poetry.html')
+
+@main.route('/word_match')
+def word_match_page(): return render_template('word_match.html')
+
+@main.route('/redesign')
+def redesign_preview(): return render_template('index_redesign.html')
+
+# === 单词消消乐 API ===
+@api_bp.route('/words', methods=['GET'])
+def get_random_words():
+    """获取随机单词对"""
+    try:
+        count = request.args.get('count', 10, type=int)
+        # Randomly select 'count' words from the Vocabulary table
+        # using func.random() for SQLite/PostgreSQL
+        words = Vocabulary.query.order_by(func.random()).limit(count).all()
+        
+        return jsonify({
+            "success": True,
+            "data": [w.to_dict() for w in words]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})

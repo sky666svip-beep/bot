@@ -2,7 +2,7 @@
  * App.js：程序主入口，负责初始化和事件绑定
  */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 AI 答题助手已就绪");
+    console.log("🚀 答题助手已就绪");
 
     // 1. 初始化 UI 特效 (樱花与时钟)
     if (typeof UIEffects !== 'undefined') {

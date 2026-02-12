@@ -1,50 +1,52 @@
 /* app/static/essay.css */
 
-/* === 1. 全局主题变量系统 === */
+/* === 1. 全局主题变量系统 (五色渐变) === */
 :root {
-    /* 默认基础色 */
-    --bg-color: #f8f9fa;
+    /* 五色渐变背景色 */
+    --bg-gradient: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 25%, #dbeafe 50%, #e0f2fe 75%, #f0f9ff 100%);
+    --bg-color: transparent;
     --text-primary: #2c3e50;
-    --text-secondary: #6c757d;
+    --text-secondary: #64748b;
     --border-radius: 12px;
-    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-soft: 0 4px 20px rgba(99, 102, 241, 0.08);
     --transition-base: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 
-    /* 默认主题色 (语文-暖色) */
-    --theme-primary: #ff9f43;    /* 暖橙色 */
-    --theme-light: #fff5eb;      /* 浅米色背景 */
-    --theme-hover: #ff8c24;
-    --theme-border: #ffe0c2;
+    /* 五色渐变主题色 */
+    --theme-primary: #6366f1;    /* indigo-500 */
+    --theme-light: linear-gradient(135deg, rgba(243,232,255,0.5) 0%, rgba(224,231,255,0.5) 25%, rgba(219,234,254,0.5) 50%, rgba(224,242,254,0.5) 75%, rgba(240,249,255,0.5) 100%);
+    --theme-hover: #4f46e5;
+    --theme-border: rgba(224, 231, 255, 0.8);
     --btn-text: #fff;
 }
 
-/* 英语主题 (冷色) */
+/* 英语主题 (偏蓝) */
 body.theme-english {
-    --theme-primary: #48dbfb;    /* 天蓝色 */
-    --theme-light: #f0fbff;      /* 浅蓝白背景 */
-    --theme-hover: #29ccf0;
-    --theme-border: #cff4fc;
+    --theme-primary: #0ea5e9;    /* sky-500 */
+    --theme-hover: #0284c7;
+    --theme-border: rgba(186, 230, 253, 0.8);
 }
 
 /* === 2. 基础排版与布局 === */
 body {
-    background-color: var(--bg-color);
+    background: var(--bg-gradient);
     font-family: 'Inter', 'Microsoft YaHei', sans-serif;
     color: var(--text-primary);
     line-height: 1.6;
     font-size: 14px;
-    transition: background-color 0.5s ease;
+    min-height: 100vh;
 }
 
-/* 导航栏样式覆盖 */
+/* 导航栏样式覆盖 - 五色渐变 */
 .navbar-custom {
-    background: #fff !important;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    background: linear-gradient(135deg, rgba(243,232,255,0.95) 0%, rgba(224,231,255,0.95) 25%, rgba(219,234,254,0.95) 50%, rgba(224,242,254,0.95) 75%, rgba(240,249,255,0.95) 100%) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.5);
 }
 .navbar-brand {
     font-weight: 700;
-    color: #2c3e50 !important;
+    color: #6366f1 !important;
     font-size: 18px;
     letter-spacing: 0.5px;
 }
@@ -66,19 +68,27 @@ body {
     border-radius: 10px;
 }
 
-/* === 3. 卡片式设计 === */
+/* === 3. 卡片式设计 - 五色渐变 === */
 .main-card {
-    background: #fff;
+    background: linear-gradient(135deg, 
+        rgba(243, 232, 255, 0.85) 0%,
+        rgba(224, 231, 255, 0.85) 25%,
+        rgba(219, 234, 254, 0.85) 50%,
+        rgba(224, 242, 254, 0.85) 75%,
+        rgba(240, 249, 255, 0.85) 100%
+    );
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     border-radius: var(--border-radius);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: var(--shadow-soft);
     padding: 24px;
     transition: var(--transition-base);
     height: 100%;
-    overflow: hidden; /* 防止内容溢出圆角 */
+    overflow: hidden;
 }
 .main-card:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12);
     transform: translateY(-2px);
 }
 
@@ -102,63 +112,69 @@ body {
     border: 1px solid var(--theme-border);
 }
 
-/* === 5. 输入与上传区域 === */
+/* === 5. 输入与上传区域 - 五色渐变风格 === */
 .input-area {
-    border: 2px dashed #dee2e6;
+    border: 2px solid rgba(224, 231, 255, 0.6);
     border-radius: var(--border-radius);
     padding: 20px;
-    background: #fafafa;
+    background: rgba(255, 255, 255, 0.4);
     transition: var(--transition-base);
 }
 .input-area:hover, .input-area:focus-within {
-    border-color: var(--theme-primary);
-    background: #fff;
+    border-color: #6366f1;
+    background: linear-gradient(135deg, rgba(243,232,255,0.3) 0%, rgba(219,234,254,0.3) 100%);
 }
 textarea.form-control {
     border: none;
-    background: transparent;
+    background: linear-gradient(135deg, 
+        #f3e8ff 0%,   
+        #e0e7ff 25%,  
+        #dbeafe 50%,  
+        #e0f2fe 75%,  
+        #f0f9ff 100%  
+    );
     resize: none;
     font-size: 15px;
-    box-shadow: none !important; /* 移除 Bootstrap 默认聚焦阴影 */
+    box-shadow: none !important;
 }
 .upload-btn-group .btn {
     border-radius: 8px;
-    border: 1px solid #e9ecef;
-    color: var(--text-secondary);
-    background: #fff;
+    border: 1px solid rgba(224, 231, 255, 0.6);
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.5);
     font-size: 13px;
     padding: 6px 12px;
     transition: var(--transition-base);
 }
 .upload-btn-group .btn:hover {
-    border-color: var(--theme-primary);
-    color: var(--theme-primary);
-    background: var(--theme-light);
+    border-color: #6366f1;
+    color: #6366f1;
+    background: linear-gradient(135deg, rgba(243,232,255,0.5) 0%, rgba(219,234,254,0.5) 100%);
 }
 
-/* === 6. 核心按钮 === */
+/* === 6. 核心按钮 - 五色渐变风格 === */
 .btn-submit {
-    background: var(--theme-primary);
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%);
     color: #fff;
     border: none;
     border-radius: 8px;
     padding: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
     transition: var(--transition-base);
 }
 .btn-submit:hover {
-    background: var(--theme-hover);
+    background: linear-gradient(135deg, #9333ea 0%, #4f46e5 25%, #2563eb 50%, #0284c7 75%, #0891b2 100%);
     transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
     color: #fff;
 }
 .btn-submit:active {
     transform: scale(0.98);
 }
 .btn-submit:disabled {
-    background: #ccc;
+    background: #cbd5e1;
     transform: none;
 }
 
@@ -171,33 +187,36 @@ textarea.form-control {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 评分徽章 */
+/* 评分徽章 - 五色渐变风格 */
 .score-badge-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--theme-light);
+    background: linear-gradient(135deg, rgba(243,232,255,0.3) 0%, rgba(224,231,255,0.3) 25%, rgba(219,234,254,0.3) 50%, rgba(224,242,254,0.3) 75%, rgba(240,249,255,0.3) 100%);
     padding: 15px 20px;
     border-radius: 10px;
     margin-bottom: 20px;
-    border-left: 5px solid var(--theme-primary);
+    border-left: 5px solid #6366f1;
 }
 .score-value {
     font-size: 28px;
     font-weight: 800;
-    color: var(--theme-primary);
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 /* 评分颜色等级 */
-.score-A, .score-Excellent { color: #2ecc71 !important; } /* 绿 */
-.score-B, .score-Good { color: #3498db !important; }      /* 蓝 */
-.score-C, .score-Medium { color: #f1c40f !important; }    /* 黄 */
-.score-D, .score-Pass { color: #e67e22 !important; }      /* 橙 */
-.score-F, .score-Fail { color: #e74c3c !important; }      /* 红 */
+.score-A, .score-Excellent { color: #10b981 !important; } /* 绿 */
+.score-B, .score-Good { color: #3b82f6 !important; }      /* 蓝 */
+.score-C, .score-Medium { color: #f59e0b !important; }    /* 黄 */
+.score-D, .score-Pass { color: #f97316 !important; }      /* 橙 */
+.score-F, .score-Fail { color: #ef4444 !important; }      /* 红 */
 
-/* 子模块卡片 (总评、纠错等) */
+/* 子模块卡片 (总评、纠错等) - 五色渐变风格 */
 .sub-card {
-    background: #fff;
-    border: 1px solid #f0f0f0;
+    background: linear-gradient(135deg, rgba(243,232,255,0.5) 0%, rgba(224,231,255,0.5) 25%, rgba(219,234,254,0.5) 50%, rgba(224,242,254,0.5) 75%, rgba(240,249,255,0.5) 100%);
+    border: 1px solid rgba(224, 231, 255, 0.6);
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 16px;
@@ -205,72 +224,72 @@ textarea.form-control {
     transition: var(--transition-base);
 }
 .sub-card:hover {
-    border-color: var(--theme-border);
-    background: var(--theme-light); /* 极其淡的主题色背景 */
+    border-color: #a5b4fc;
+    background: linear-gradient(135deg, 
+        #f3e8ff 0%,   
+        #e0e7ff 25%,  
+        #dbeafe 50%,  
+        #e0f2fe 75%,  
+        #f0f9ff 100%  
+    );
 }
 
 .sub-title {
     font-size: 16px;
     font-weight: 700;
     margin-bottom: 12px;
-    color: #34495e;
+    color: #374151;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 /* 标题图标颜色跟随主题 */
-.sub-title i { color: var(--theme-primary); }
+.sub-title i { color: #6366f1; }
 
 /* 详情文本样式 */
-.detail-text { font-size: 14px; color: #555; }
-.highlight-good { background-color: #e8f5e9; padding: 2px 4px; border-radius: 4px; color: #2e7d32; }
-.highlight-bad { background-color: #ffebee; padding: 2px 4px; border-radius: 4px; color: #c62828; text-decoration: line-through; }
-.correction-arrow { color: #999; margin: 0 5px; font-size: 12px; }
+.detail-text { font-size: 14px; color: #4b5563; }
+.highlight-good { background-color: rgba(209, 250, 229, 0.8); padding: 2px 4px; border-radius: 4px; color: #047857; }
+.highlight-bad { background-color: rgba(254, 226, 226, 0.8); padding: 2px 4px; border-radius: 4px; color: #b91c1c; text-decoration: line-through; }
+.correction-arrow { color: #9ca3af; margin: 0 5px; font-size: 12px; }
 
-/* 加载动画 */
+/* 加载动画 - 五色渐变风格 */
 .loading-container {
     text-align: center;
     padding: 40px 0;
-    color: var(--text-secondary);
+    color: #64748b;
 }
 .spinner-border {
     width: 3rem;
     height: 3rem;
-    color: var(--theme-primary);
+    color: #6366f1;
 }
 .result-section {
-    /* 核心：限制最大高度 + 开启垂直滚动 */
-    max-height: 600px; /* 高度可调，600px 大约能容纳 2-3 屏内容，保持卡片平衡 */
-    overflow-y: auto;  /* 内容超出时自动显示滚动条 */
-
-    /* 布局优化 */
-    padding-right: 12px; /* 给滚动条留出呼吸空间 */
-    margin-right: -8px;  /* 视觉补偿，让滚动条贴近卡片边缘 */
-
-    /* 平滑滚动体验 */
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 12px;
+    margin-right: -8px;
     scroll-behavior: smooth;
 }
 
-/* --- 滚动条美化 (Chrome, Safari, Edge) --- */
+/* --- 滚动条美化 (Chrome, Safari, Edge) - 五色渐变风格 --- */
 .result-section::-webkit-scrollbar {
-    width: 6px; /* 纤细的滚动条 */
+    width: 6px;
 }
 
 .result-section::-webkit-scrollbar-track {
-    background: transparent; /* 轨道透明，更清爽 */
-    margin: 4px 0; /* 上下留白 */
+    background: transparent;
+    margin: 4px 0;
 }
 
 .result-section::-webkit-scrollbar-thumb {
-    background-color: #e2e8f0; /* 默认浅灰，低调不抢眼 */
-    border-radius: 10px;       /* 圆润边角 */
+    background-color: rgba(224, 231, 255, 0.8);
+    border-radius: 10px;
     border: 1px solid transparent;
     background-clip: content-box;
     transition: background-color 0.3s;
 }
 
-/* 鼠标悬停或滚动时，滚动条变成当前的主题色！(联动 :root 变量) */
+/* 鼠标悬停时滚动条变成渐变色 */
 .result-section::-webkit-scrollbar-thumb:hover {
-    background-color: var(--theme-primary);
-    /* 语文模式变橙色，英语模式变蓝色 */
+    background-color: #6366f1;
 }

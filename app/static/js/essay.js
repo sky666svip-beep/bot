@@ -156,7 +156,7 @@ function renderResult(data) {
                 ${data.corrections.length === 0 ? '<p class="text-success small"><i class="fas fa-check"></i> Perfect! No errors found.</p>' : ''}
                 <div class="d-flex flex-column gap-3">
                     ${data.corrections.map(c => `
-                        <div class="p-2 bg-white border rounded">
+                        <div class="p-2 border rounded">
                             <div class="mb-1">
                                 <span class="highlight-bad">${c.error}</span>
                                 <i class="fas fa-arrow-right correction-arrow"></i>
@@ -172,7 +172,7 @@ function renderResult(data) {
                 <div class="sub-title text-info"><i class="fas fa-rocket"></i> Expression Boost</div>
                 <div class="d-flex flex-column gap-3">
                     ${data.enhancements.map(e => `
-                        <div class="p-2 bg-white border rounded">
+                        <div class="p-2 border rounded">
                             <div class="text-muted small mb-1 text-decoration-line-through">${e.original}</div>
                             <div class="text-dark fw-bold"><i class="fas fa-magic text-info me-1"></i>${e.improved}</div>
                         </div>
