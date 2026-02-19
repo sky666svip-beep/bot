@@ -8,8 +8,16 @@ ml/data
 app/services/__pycache__
 app/__pycache__
 app/api/__pycache__
+
+# 部署相关
+cloudflared.exe
+config.yml
+start_*.bat
+register_autostart.bat
+logs/
+*.json
 # 1. 查看本地修改状态git status
 # 2. 将所有修改的文件添加到暂存区（. 表示所有，也可指定文件如 git add index.html）git add .
 # 3. 提交暂存区文件到本地仓库，-m 后加提交说明（必须写，简洁描述修改内容）git commit -m ""
 # 4. 拉取远程仓库最新代码（避免冲突，建议每次推送前先拉取）git pull origin 分支名（如 main 或 master）
-# 5. 推送本地提交到 GitHub 远程仓库git push origin 分支名（如 main 或 master）
+# 5. 推送本地提交到 GitHub 远程仓库git push origin main 分支名（如 main 或 master）

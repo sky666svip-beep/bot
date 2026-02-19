@@ -10,6 +10,8 @@ def create_app(config_class=Config):
 
     # 2. 加载配置
     app.config.from_object(config_class)
+    # 静态资源缓存 1 天（让 Cloudflare CDN 缓存 CSS/JS/图片）
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400
 
     # 3. 初始化扩展
     db.init_app(app)
