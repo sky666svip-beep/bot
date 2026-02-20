@@ -1,7 +1,29 @@
 #
 import json
 from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
+
+
+class User(db.Model, UserMixin):
+    """用户表"""
+    __tablename__ = 'user'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(256), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 与 UserHistory 的一对多关系
+    histories = db.relationship('UserHistory', backref='user', lazy='dynamic')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 
 class QuestionBank(db.Model):
     """
@@ -112,6 +134,7 @@ class UserHistory(db.Model):
     __tablename__ = 'user_history'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)
     question = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text)
     reason = db.Column(db.Text)

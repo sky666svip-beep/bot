@@ -79,7 +79,7 @@ class CacheControlMiddleware:
                 # 移除原有的 Cache-Control (如果有)
                 headers = [(k, v) for k, v in headers if k.lower() != 'cache-control']
                 # 添加新的强缓存
-                headers.append(('Cache-Control', 'public, max-age=86400'))
+                headers.append(('Cache-Control', 'public, max-age=3600'))
             return start_response(status, headers, exc_info)
 
         return self.app(environ, custom_start_response)

@@ -13,6 +13,7 @@ from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formul
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
 from app.services.llm_service import solve_with_vision, extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
+from flask_login import login_required, current_user
 
 api_bp = Blueprint('api', __name__)
 main = Blueprint('main', __name__)
@@ -28,11 +29,19 @@ def search_question():
     user_query = request.json.get('query', '').strip()
     if not user_query:
         return jsonify({"success": False, "message": "请输入题目"})
-    # Pipeline 内部已处理核心逻辑与入库
-    result = solve_pipeline(user_query)
     
-    # 获取刚刚存入的记录 ID
-    last_rec = UserHistory.query.filter_by(question=user_query).order_by(UserHistory.id.desc()).first()
+    # 获取当前用户ID（如果已登录）
+    user_id = current_user.id if current_user.is_authenticated else None
+    
+    # Pipeline 内部已处理核心逻辑与入库，传入 user_id 用于保存历史
+    result = solve_pipeline(user_query, user_id=user_id)
+    
+    # 获取刚刚存入的记录 ID (增加 user_id 过滤以防只会拿到别人的)
+    query = UserHistory.query.filter_by(question=user_query)
+    if user_id:
+        query = query.filter_by(user_id=user_id)
+        
+    last_rec = query.order_by(UserHistory.id.desc()).first()
 
     return jsonify({
         "success": True,
@@ -44,12 +53,14 @@ def search_question():
     })
 
 @api_bp.route('/solve', methods=['POST'])
+@login_required
 def solve():
     """传统 Pipeline 接口,solve_pipeline 通常内部集成了数据库检索 + AI 生成"""
     data = request.json
-    return jsonify(solve_pipeline(data.get('question', ''), data.get('options', [])))
+    return jsonify(solve_pipeline(data.get('question', ''), data.get('options', []), user_id=current_user.id))
 
 @api_bp.route('/solve-image', methods=['POST'])
+@login_required
 def solve_image():
     """视觉路由：图片搜题 (Vision ML)"""
     file = request.files.get('file')
@@ -69,7 +80,8 @@ def solve_image():
             answer=ai_res.get('answer', '未识别出答案'),
             reason=ai_res.get('reason', '无解析'),
             source="图片搜题",
-            category=ai_res.get('category', '其他')
+            category=ai_res.get('category', '其他'),
+            user_id=current_user.id  # 关联当前用户
         )
         db.session.add(history)
         db.session.commit()
@@ -86,14 +98,17 @@ def solve_image():
 
 # 历史记录路由
 @api_bp.route('/history', methods=['GET'])
+@login_required
 def get_history():
-    histories = UserHistory.query.order_by(UserHistory.created_at.desc()).limit(10).all()
+    histories = UserHistory.query.filter_by(user_id=current_user.id)\
+        .order_by(UserHistory.created_at.desc()).limit(10).all()
     return jsonify([h.to_dict() for h in histories])
 
 @api_bp.route('/history-data', methods=['GET'])
+@login_required
 def get_history_data():
     filter_mistake = request.args.get('filter') == 'mistake'
-    query = UserHistory.query
+    query = UserHistory.query.filter_by(user_id=current_user.id)
     if filter_mistake:
         query = query.filter_by(is_mistake=True)
     
@@ -102,9 +117,15 @@ def get_history_data():
     return jsonify([h.to_dict() for h in histories])
 
 @api_bp.route('/history/<int:hid>/toggle', methods=['POST'])
+@login_required
 def toggle_history_status(hid):
      #切换历史记录的错题(mistake)状态,添加or删除错题
     record = UserHistory.query.get_or_404(hid)
+    
+    # 权限校验：只能修改自己的记录
+    if record.user_id != current_user.id:
+        return jsonify({"success": False, "message": "无权操作"}), 403
+        
     record.is_mistake = not record.is_mistake
     db.session.commit()
     return jsonify({"success": True, "new_status": record.is_mistake})
@@ -148,14 +169,17 @@ def upload_document():
         if os.path.exists(temp_path): os.remove(temp_path)
 
 @api_bp.route('/dashboard', methods=['GET'])
+@login_required
 def get_dashboard_data():
     # 1. 热力图
     daily = db.session.query(func.date(UserHistory.created_at), func.count(UserHistory.id))\
+        .filter(UserHistory.user_id == current_user.id)\
         .group_by(func.date(UserHistory.created_at)).all()
     heatmap = [[str(d), c] for d, c in daily]
     
     # 2. 饼图SELECT category, COUNT(*) FROM user_history GROUP BY category
     cats = db.session.query(UserHistory.category, func.count(UserHistory.id))\
+        .filter(UserHistory.user_id == current_user.id)\
         .group_by(UserHistory.category).all()
     pie = [{"name": c, "value": n} for c, n in cats]
     
@@ -197,9 +221,10 @@ def generate_plan_api():
     return jsonify({"success": True, "data": generate_study_plan(data)})
 
 @api_bp.route('/study-plan/weakness-analysis', methods=['GET'])
+@login_required
 def analyze_weakness_api():
     """智能分析错题本：统计最近50条错题，找出高频学科/标签"""
-    mistakes = UserHistory.query.filter_by(is_mistake=True)\
+    mistakes = UserHistory.query.filter_by(is_mistake=True, user_id=current_user.id)\
         .order_by(UserHistory.created_at.desc()).limit(50).all()
         
     if not mistakes:
@@ -221,6 +246,7 @@ def generate_simulation_api():
     return jsonify({"success": True, "questions": generate_exam_questions(request.json)})
 
 @api_bp.route('/simulation/submit', methods=['POST'])
+@login_required
 def submit_simulation_api():
     """提交并保存考试结果"""
     from app.services.answer_engine import save_question_to_db
@@ -237,7 +263,8 @@ def submit_simulation_api():
             reason=item.get('reason'),
             source='模拟考试',
             category=item.get('category', '其他'),
-            is_mistake=False  # 默认 is_mistake=False，由用户手动点收藏/错题
+            is_mistake=False,  # 默认 is_mistake=False，由用户手动点收藏/错题
+            user_id=current_user.id
         )
         db.session.add(history)
         db.session.flush()

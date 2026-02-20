@@ -71,7 +71,7 @@ class NLPService:
                 # 设定高词频 2000，确保原子化不被切分
                 jieba.add_word(word, freq=2000, tag='nz')
                 count += 1
-        print(f"✅ [NLPService] 已锁定 {count} 个逻辑原子词，防止分词切碎")
+        print(f"[NLPService] 已锁定 {count} 个逻辑原子词，防止分词切碎")
 
     def _load_stopwords(self):
         """加载自定义停用词表"""
@@ -80,11 +80,11 @@ class NLPService:
                 with open(self.STOPWORDS_PATH, 'r', encoding='utf-8') as f:
                     # 过滤掉空行
                     self.stopwords = set([line.strip() for line in f if line.strip()])
-                print(f"📖 停用词表加载成功: {len(self.stopwords)} 个词")
+                print(f"停用词表加载成功: {len(self.stopwords)} 个词")
             except Exception as e:
                 logging.error(f"停用词加载失败: {e}")
         else:
-            print("⚠️ 未找到 stopwords.txt，预处理将跳过停用词过滤")
+            print("未找到 stopwords.txt，预处理将跳过停用词过滤")
 
     def clean_prefix(self, text):
         """
@@ -134,19 +134,19 @@ class NLPService:
     def _load_model(self):
         if self.model is not None:
             return
-        print("🔄 正在初始化 NLP 引擎...")
+        print("正在初始化 NLP 引擎...")
         # 1. 配置设备
         self.device = self._determine_device()
-        print(f"🚀 计算设备: {self.device.upper()}")
+        print(f"计算设备: {self.device.upper()}")
         # 2. 检查本地模型是否完整
         local_config_path = os.path.join(self.MODEL_PATH, 'config.json')
         is_local_run = False
         if os.path.exists(self.MODEL_PATH) and os.path.exists(local_config_path):
-            print(f"📡 检测到完整的本地模型，正在离线加载: {self.MODEL_PATH}")
+            print(f"检测到完整的本地模型，正在离线加载: {self.MODEL_PATH}")
             load_path = self.MODEL_PATH
             is_local_run = True
         else:
-            print(f"🌐 本地未找到完整模型 (缺失 config.json)，准备从 HuggingFace 下载: {self.MODEL_NAME}")
+            print(f"本地未找到完整模型 (缺失 config.json)，准备从 HuggingFace 下载: {self.MODEL_NAME}")
             print(f"   (下载完成后将自动保存至: {self.MODEL_PATH})")
             load_path = self.MODEL_NAME
             is_local_run = False
@@ -161,16 +161,16 @@ class NLPService:
             )
             # 4. 获取并保存模型维度
             self.embedding_dim = self.model.get_sentence_embedding_dimension()
-            print(f"✅ 模型加载完毕 | 维度: {self.embedding_dim}")
+            print(f"模型加载完毕 | 维度: {self.embedding_dim}")
             # 5. 如果是刚从网络下载的，保存为标准格式到本地
             if not is_local_run:
-                print(f"💾 正在将模型保存为标准格式: {self.MODEL_PATH} ...")
+                print(f"正在将模型保存为标准格式: {self.MODEL_PATH} ...")
                 # 这步会将杂乱的缓存文件转存为 clean 的 config.json + model.safetensors
                 self.model.save(self.MODEL_PATH)
-                print("✅ 模型已保存，下次启动将自动进入离线模式")
+                print("模型已保存，下次启动将自动进入离线模式")
         except Exception as e:
-            logging.error(f"❌ 模型加载失败: {e}")
-            print("💡 建议操作：请删除 model_cache_qwen 文件夹后重试，确保网络畅通。")
+            logging.error(f"模型加载失败: {e}")
+            print("建议操作：请删除 model_cache_qwen 文件夹后重试，确保网络畅通。")
             raise e
 
     @staticmethod
@@ -191,7 +191,7 @@ class NLPService:
 
     def refresh_index(self, app_context_model):
         """构建索引：从数据库加载数据"""
-        print("🔄 正在构建向量索引矩阵...")
+        print("正在构建向量索引矩阵...")
         try:
             all_questions = app_context_model.query.all()
             embeddings, metadata = [], []
@@ -215,14 +215,14 @@ class NLPService:
                     continue
 
             if not embeddings:
-                print(f"⚠️ 索引未构建：未发现符合 {self.embedding_dim} 维度的向量数据")
-                print("💡 请运行 rebuild_vectors.py 以根据新模型重刷数据库")
+                print(f"索引未构建：未发现符合 {self.embedding_dim} 维度的向量数据")
+                print("请运行 rebuild_vectors.py 以根据新模型重刷数据库")
                 return
             self._corpus_tensor = torch.tensor(embeddings, dtype=torch.float32).to(self.device)
             self._corpus_data = metadata
 
             mem_size = self._corpus_tensor.element_size() * self._corpus_tensor.nelement()
-            print(f"✅ 索引构建完成！有效数据: {len(metadata)} 条 (显存: {mem_size / 1024 / 1024:.2f} MB)")
+            print(f"索引构建完成！有效数据: {len(metadata)} 条 (显存: {mem_size / 1024 / 1024:.2f} MB)")
 
         except Exception as e:
             logging.error(f"索引构建失败: {e}")
@@ -254,12 +254,12 @@ class NLPService:
                 if word in query_words and word not in candidate_words:
                     penalty = config["missing_penalty"]
                     total_penalty += penalty
-                    print(f"📉 [{config['name']}] 属性缺失: 用户要求[{word}] -> 扣分 {penalty}")
+                    print(f"[{config['name']}] 属性缺失: 用户要求[{word}] -> 扣分 {penalty}")
                 # 场景 2: 冗余惩罚 (用户无，题库有)
                 elif word not in query_words and word in candidate_words:
                     penalty = config["redundant_penalty"]
                     total_penalty += penalty
-                    print(f"📉 [{config['name']}] 属性冗余: 题库包含[{word}] -> 扣分 {penalty}")
+                    print(f"[{config['name']}] 属性冗余: 题库包含[{word}] -> 扣分 {penalty}")
         # --- D. 关键词重合度 (覆盖率) ---
         intersection = query_words & candidate_words
         if len(query_words) > 0:
@@ -273,7 +273,7 @@ class NLPService:
         # 限制范围在 0.0 到 1.0 之间
         final_score = max(0.0, min(1.0, final_score))
         print(
-            f"📊 校验详情 | 原始向量:{original_score:.4f} | 覆盖率:{coverage:.4f} | 惩罚:-{total_penalty:.4f} | 最终:{final_score:.4f}")
+            f"校验详情 | 原始向量:{original_score:.4f} | 覆盖率:{coverage:.4f} | 惩罚:-{total_penalty:.4f} | 最终:{final_score:.4f}")
         return final_score
 
     def search_best_match(self, query_text, threshold=0.80):
@@ -317,6 +317,6 @@ class NLPService:
         else:
             self._corpus_tensor = torch.cat([self._corpus_tensor, new_vec_tensor], dim=0)
             self._corpus_data.append(new_metadata)
-        print(f"✨ 索引热更新成功 | 当前矩阵规模: {self._corpus_tensor.shape[0]}")
+        print(f"索引热更新成功 | 当前矩阵规模: {self._corpus_tensor.shape[0]}")
 
 nlp_engine = NLPService()

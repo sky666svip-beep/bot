@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 智能答题助手</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">登录智能答题助手，同步您的专属题库</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div style="margin-bottom: 1rem;">
+                <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">用户名</label>
+                <input type="text" id="username" name="username" class="form-control" required autofocus placeholder="输入您的用户名">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">密码</label>
+                <input type="password" id="password" name="password" class="form-control" required placeholder="输入您的密码">
+            </div>
+
+            <div style="margin-bottom: 1.5rem; display: flex; align-items: center;">
+                <input type="checkbox" id="remember" name="remember" style="margin-right: 0.5rem; width: 16px; height: 16px; accent-color: #8b5cf6;">
+                <label for="remember" style="font-size: 0.9rem; color: #64748b; cursor: pointer;">记住我</label>
+            </div>
+
+            <button type="submit" class="btn-auth">
+                <i class="fas fa-sign-in-alt me-2"></i> 立即登录
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            还没有账号？ <a href="{{ url_for('auth.register') }}">立即注册</a>
+        </div>
+    </div>
+</body>
+</html>

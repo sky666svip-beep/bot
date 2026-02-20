@@ -72,7 +72,7 @@ def fast_db_lookup(question_text):
 
     return None
 
-def solve_pipeline(question_text, options=None):
+def solve_pipeline(question_text, options=None, user_id=None):
     print(f"🔎 正在处理题目: {question_text[:30]}...")
     # --- 第一步：标准化预处理  ---
     std_q = nlp_engine.standardize_text(question_text)
@@ -159,7 +159,8 @@ def solve_pipeline(question_text, options=None):
             ai_answer,
             ai_res.get('reason'),
             f"AI {ai_res.get('type', '智能分析')}",
-            ai_category
+            ai_category,
+            user_id=user_id
         )
         db.session.commit()
     except Exception as e:
@@ -172,14 +173,15 @@ def solve_pipeline(question_text, options=None):
         "score": 0.85,
         "options": options
     }
-def save_to_history(q, a, r, source, category='其他'):
+def save_to_history(q, a, r, source, category='其他', user_id=None):
     """辅助函数：保存到用户历史表"""
     history = UserHistory(
         question=q,
         answer=a,
         reason=r,
         source=source,
-        category=category
+        category=category,
+        user_id=user_id
     )
     db.session.add(history)
 

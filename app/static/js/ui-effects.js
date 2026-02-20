@@ -44,7 +44,7 @@ const UIEffects = {
         const container = document.getElementById('sakura-container');
         if (!container) return;
 
-        const createSakura = (isInitial = false) => {
+        const createSakura = (isInitial = false, parent = container) => {
             const sakura = document.createElement('div');
             sakura.classList.add('sakura');
             const size = Math.random() * 15 + 10;
@@ -55,12 +55,23 @@ const UIEffects = {
             const duration = Math.random() * 6 + 6;
             sakura.style.animationDuration = `${duration}s`;
             sakura.style.opacity = Math.random() * 0.5 + 0.3;
-            container.appendChild(sakura);
-            setTimeout(() => sakura.remove(), duration * 1000);
+            
+            parent.appendChild(sakura);
+            
+            // 优化：确保元素自动销毁
+            setTimeout(() => {
+                if (sakura && sakura.parentNode) sakura.remove();
+            }, duration * 1000);
         };
 
-        for (let i = 0; i < 30; i++) createSakura(true);
-        setInterval(() => createSakura(false), 300);
+        // 优化：使用 DocumentFragment 批量创建初始花瓣，减少重绘
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < 21; i++) { // 数量减少至 70% (30 -> 21)
+            createSakura(true, fragment);
+        }
+        container.appendChild(fragment);
+
+        setInterval(() => createSakura(false), 430); // 频率降低至 70% (300ms -> 430ms)
     }
 };
 
