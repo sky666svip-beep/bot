@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成语 PK</title>
+    <!-- Tailwind CSS CDN (For rapid prototyping with modern utility classes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables */
+        :root {
+            --bg-color: #fdfaf5;
+        }
+
+        /* 基础与字体设定 */
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Noto Serif SC', serif;
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 国风成语大字水印背景 */
+        .watermark-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .watermark-text {
+            position: absolute;
+            font-size: 20rem;
+            color: rgba(0, 0, 0, 0.02);
+            font-weight: 900;
+            white-space: nowrap;
+            user-select: none;
+            transform: rotate(-15deg);
+        }
+
+        /* VS 立体文字特效 */
+        .vs-text {
+            font-size: 4rem;
+            font-weight: 900;
+            font-style: italic;
+            background: linear-gradient(135deg, #3b82f6, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.1));
+            display: inline-block;
+        }
+        
+        /* VS 渐变条底色 */
+        .vs-bar-bg {
+            background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(249,115,22,0.1) 100%);
+        }
+
+        /* 喇叭图标动画 */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .playing i {
+            animation: pulse-ring 1s infinite cubic-bezier(0.66, 0, 0, 1);
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800 pb-10">
+
+    <!-- 水印层 -->
+    <div class="watermark-bg">
+        <div class="watermark-text" style="top: -5%; left: -10%;">成语</div>
+        <div class="watermark-text" style="top: 40%; right: -20%;">对决</div>
+        <div class="watermark-text" style="bottom: -10%; left: 10%;">学海</div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/" class="text-gray-600 hover:text-blue-600 transition-colors cursor-pointer w-10">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </a>
+            <div class="bg-gray-100 rounded-xl px-4 py-1.5 flex items-center shadow-inner">
+                <span class="text-gray-700 font-bold tracking-widest text-sm">成语 PK</span>
+            </div>
+            <div class="w-10"></div> <!-- 占位保持居中 -->
+        </div>
+    </nav>
+
+    <!-- 主体容器 -->
+    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-8">
+
+        <!-- 搜索区域 -->
+        <section class="relative z-20">
+            <div class="relative">
+                <input type="text" id="idiom-search-input" placeholder="请输入成语中文、全拼、或首字母拼音..." class="w-full pl-12 pr-10 py-3 rounded-2xl border border-orange-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all font-sans text-gray-700 placeholder-gray-400 bg-white/90 backdrop-blur-sm">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400"></i>
+                <!-- 清除按钮 -->
+                <button id="search-clear-btn" class="hidden absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-500 focus:outline-none transition-colors">
+                    <i class="fas fa-times-circle text-lg"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- 对战视觉区 (响应式) -->
+        <section class="vs-bar-bg rounded-3xl p-6 md:p-10 shadow-sm border border-orange-100 relative overflow-hidden flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 transition-all">
+            
+            <!-- 左方：红黑汉服少年 -->
+            <div class="flex flex-col items-center gap-3 z-10 w-full md:w-auto">
+                <div id="avatar-red" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-red-200 bg-red-50 flex items-center justify-center shadow-lg transform transition-all relative overflow-hidden">
+                    <img src="{{ url_for('static', filename='img/boy_red.jpg') }}" class="w-full h-full object-cover" alt="荣耀诗圣">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-red-600/10 to-transparent pointer-events-none"></div>
+                </div>
+                <!-- 标签 -->
+                <div class="text-center">
+                    <span class="text-xs font-bold text-gray-500 bg-white/60 px-2 py-0.5 rounded-full shadow-sm inline-block">荣耀诗圣</span>
+                </div>
+            </div>
+
+            <!-- VS 图标区 (纯装饰) -->
+            <div class="z-10 flex-shrink-0 relative mx-4">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white/40 blur-xl rounded-full"></div>
+                <div class="vs-text select-none drop-shadow-md text-gray-300">VS</div>
+            </div>
+
+            <!-- 右方：蓝白汉服少年 -->
+            <div class="flex flex-col items-center gap-3 z-10 w-full md:w-auto">
+                <div id="avatar-blue" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-gray-200 bg-gray-50 flex items-center justify-center shadow-lg transform transition-all relative overflow-hidden opacity-80">
+                    <img src="{{ url_for('static', filename='img/boy_blue.jpg') }}" class="w-full h-full object-cover" alt="快乐秀才">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-gray-600/10 to-transparent pointer-events-none"></div>
+                </div>
+                <!-- 标签 -->
+                <div class="text-center">
+                    <span class="text-xs font-bold text-gray-400 bg-white/60 px-2 py-0.5 rounded-full shadow-sm inline-block">快乐秀才</span>
+                </div>
+            </div>
+            
+            <!-- 装饰性光晕底色条 -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 via-orange-300 to-blue-400 opacity-50"></div>
+        </section>
+
+        <!-- 游戏控制区 (开始游戏 / 计时器设置) -->
+        <section id="game-controls" class="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-20 transition-all duration-300">
+            <!-- 定制化 Select (倒计时选择) -->
+            <div class="relative w-40">
+                <select id="game-timer-select" class="block w-full appearance-none bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded-full shadow-sm leading-tight focus:outline-none focus:bg-white focus:border-orange-400 font-sans cursor-pointer transition-colors">
+                    <option value="5">⏳ 5 秒</option>
+                    <option value="10">⏳ 10 秒</option>
+                    <option value="15" selected>⏳ 15 秒</option>
+                    <option value="20">⏳ 20 秒</option>
+                    <option value="30">⏳ 30 秒</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+            
+            <!-- 大号开始按钮 -->
+            <button id="btn-start-game" class="w-48 bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all text-lg tracking-widest flex items-center justify-center gap-2">
+                <i class="fas fa-play text-sm"></i> 开始接龙
+            </button>
+        </section>
+
+        <!-- 游戏进行区 (隐藏态，开始后展开) -->
+        <section id="game-arena" class="hidden relative z-20 flex-col items-center bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-orange-100 transition-all duration-500">
+            
+            <!-- 游戏顶部：状态指示 -->
+            <div class="flex items-center justify-between w-full mb-6 relative">
+                <!-- 回合提示 -->
+                <div class="flex flex-col">
+                    <span id="turn-indicator" class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">系统出题</span>
+                    <div id="target-display" class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">
+                        等待发牌...
+                    </div>
+                </div>
+                
+                <!-- 倒计时中心 -->
+                <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div id="countdown-circle" class="w-16 h-16 rounded-full bg-orange-50 border-4 border-orange-200 flex items-center justify-center shadow-inner transition-all duration-300">
+                        <span id="countdown-text" class="text-2xl font-black text-orange-500 font-sans">15</span>
+                    </div>
+                </div>
+
+                <!-- 放弃操作 -->
+                <button id="btn-give-up" class="text-gray-400 hover:text-red-500 transition-colors text-sm flex flex-col items-center gap-1 focus:outline-none">
+                    <i class="fas fa-flag text-lg"></i>
+                    <span class="text-xs">认输/结束</span>
+                </button>
+            </div>
+
+            <!-- 输入操作台 -->
+            <div class="w-full max-w-lg flex items-center gap-2">
+                <div class="relative flex-1">
+                    <input type="text" id="game-word-input" placeholder="输入成语进行接龙..." class="w-full bg-gray-50 border border-gray-200 text-gray-800 text-lg rounded-full py-3 pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-colors" disabled>
+                </div>
+                <button id="btn-submit-word" class="bg-orange-500 hover:bg-orange-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button id="btn-refresh-word" class="bg-blue-50 hover:bg-blue-100 text-blue-500 w-14 h-14 rounded-full flex items-center justify-center shadow-sm border border-blue-100 transition-colors" title="死局换词">
+                    <i class="fas fa-dice"></i>
+                </button>
+            </div>
+            
+            <!-- 消息与提示 -->
+            <div id="game-message" class="h-6 mt-4 text-sm font-bold text-red-500 text-center transition-opacity opacity-0">
+                错误提示占位
+            </div>
+
+            <!-- 历史记录展示条 (只展示最新的几个) -->
+            <div class="w-full mt-4 pt-4 border-t border-gray-100">
+                <p class="text-xs text-gray-400 mb-2 font-bold tracking-widest"><i class="fas fa-history"></i> 接龙轨迹</p>
+                <div id="history-track" class="flex flex-wrap gap-2">
+                    <!-- 动态塞入历史小药丸 -->
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 成语列表区 -->
+        <section class="bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
+            
+            <!-- 头部 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-gray-900 drop-shadow-sm flex items-center gap-2">
+                    <i class="fas fa-book-open text-orange-400 text-xl"></i> 成语列表
+                </h2>
+                <!-- 以后作为二级页面入口保留 -->
+                <a href="/idioms_all" class="text-sm font-semibold text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1 cursor-pointer">
+                    全部 <i class="fas fa-chevron-right text-xs"></i>
+                </a>
+            </div>
+
+            <!-- 列表容器 -->
+            <div id="idiom-list" class="divide-y divide-gray-100">
+                
+                <!-- 骨架屏 / 加载状态 -->
+                <div id="loading-skeleton" class="animate-pulse space-y-4 py-4">
+                    <div class="h-10 bg-gray-200 rounded-lg w-full"></div>
+                    <div class="h-10 bg-gray-200 rounded-lg w-full"></div>
+                    <div class="h-10 bg-gray-200 rounded-lg w-full"></div>
+                </div>
+
+            </div>
+            
+        </section>
+
+    </main>
+
+    <!-- JavaScript 交互与数据渲染 -->
+    <script>
+        const DOM = {
+            list: document.getElementById('idiom-list'),
+            skeleton: document.getElementById('loading-skeleton')
+        };
+
+        // TTS 实例引用
+        let currentUtterance = null;
+        let activeAudioBtn = null;
+
+        // 获取并渲染数据
+        async function fetchIdioms() {
+            try {
+                const keyword = document.getElementById('idiom-search-input').value.trim();
+                const url = keyword ? `/api/idioms/search?keyword=${encodeURIComponent(keyword)}` : '/api/idioms/random?count=10';
+                
+                // 显示加载状态
+                DOM.list.innerHTML = `<div id="loading-skeleton" class="animate-pulse space-y-4 py-4">
+                    <div class="h-10 bg-gray-200 rounded-lg w-full"></div>
+                    <div class="h-10 bg-gray-200 rounded-lg w-full"></div>
+                </div>`;
+
+                const res = await fetch(url);
+                const json = await res.json();
+                
+                if (json.success && json.data) {
+                    if (json.data.length === 0) {
+                        DOM.list.innerHTML = `<div class="text-center text-gray-400 py-10 font-sans tracking-widest bg-white/50 rounded-xl">未能寻到相关成语，请尝试换个词或拼音重试</div>`;
+                    } else {
+                        renderList(json.data);
+                    }
+                } else {
+                    DOM.list.innerHTML = `<div class="text-center text-gray-400 py-8">获取数据失败，请刷新重试</div>`;
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                DOM.list.innerHTML = `<div class="text-center text-red-400 py-8">网络错误，请稍后重试</div>`;
+            }
+        }
+        
+        // --- 搜索交互逻辑 ---
+        const searchInput = document.getElementById('idiom-search-input');
+        const searchClearBtn = document.getElementById('search-clear-btn');
+        let searchTimeout = null;
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if(val) {
+                searchClearBtn.classList.remove('hidden');
+            } else {
+                searchClearBtn.classList.add('hidden');
+            }
+            
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetchIdioms(); // 内部判断 url
+            }, 300); // 300ms 防抖
+        });
+
+        searchClearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClearBtn.classList.add('hidden');
+            fetchIdioms(); // 恢复随机数据
+        });
+
+        // 渲染 HTML
+        function renderList(idioms) {
+            DOM.list.innerHTML = ''; // 清除骨架屏
+
+            idioms.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'py-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors rounded-xl px-2 group cursor-pointer';
+                row.onclick = (e) => {
+                    // 如果点的是喇叭或者喇叭内部图标，不触发整行点击
+                    if (e.target.closest('button')) return;
+                    window.location.href = `/idiom/${item.id}`;
+                };
+
+                // 释义处理，如果太长截断
+                let explanation = item.explanation || '暂无释义';
+                if(explanation.length > 50) explanation = explanation.substring(0, 50) + '...';
+
+                row.innerHTML = `
+                    <button class="audio-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-blue-100 hover:text-blue-600 transition-colors flex-shrink-0" 
+                            title="播放读音" 
+                            data-word="${item.word}">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-xl font-black text-gray-900 tracking-wider">${item.word}</h3>
+                            <span class="text-sm text-gray-400 font-sans tracking-widest">${item.pinyin || ''}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 font-sans truncate pr-4 opacity-80 group-hover:opacity-100 transition-opacity">
+                            ${explanation}
+                        </p>
+                    </div>
+                    
+                    <div class="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </div>
+                `;
+
+                DOM.list.appendChild(row);
+            });
+
+            // 绑定发音事件
+            document.querySelectorAll('.audio-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const word = this.getAttribute('data-word');
+                    playTTS(word, this);
+                });
+            });
+        }
+
+        // 处理 TTS
+        function playTTS(text, btnElement) {
+            // 如果不支持SpeechSynthesis
+            if (!('speechSynthesis' in window)) {
+                alert('您的浏览器不支持语音播报功能');
+                return;
+            }
+
+            // 1. 自动掐断上一个声音
+            window.speechSynthesis.cancel();
+            
+            // 恢复上一个按钮的状态
+            if (activeAudioBtn) {
+                activeAudioBtn.classList.remove('playing');
+            }
+
+            // 2. 配置并发音
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = 'zh-CN';
+            currentUtterance.rate = 0.9; // 稍微慢一点更清晰
+            
+            // 添加动画状态
+            btnElement.classList.add('playing');
+            activeAudioBtn = btnElement;
+
+            // 播报结束时移除状态
+            currentUtterance.onend = function() {
+                btnElement.classList.remove('playing');
+                if (activeAudioBtn === btnElement) activeAudioBtn = null;
+            };
+
+            // 错误处理移除状态
+            currentUtterance.onerror = function() {
+                btnElement.classList.remove('playing');
+            };
+
+            window.speechSynthesis.speak(currentUtterance);
+        }
+
+        // 页面卸载或隐藏时掐断声音
+        window.addEventListener('beforeunload', () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        });
+
+        // ==========================================
+        //         成语接龙游戏逻辑 (Idiom Solitaire)
+        // ==========================================
+
+        const GameDOM = {
+            controls: document.getElementById('game-controls'),
+            arena: document.getElementById('game-arena'),
+            btnStart: document.getElementById('btn-start-game'),
+            timerSelect: document.getElementById('game-timer-select'),
+            targetDisplay: document.getElementById('target-display'),
+            turnIndicator: document.getElementById('turn-indicator'),
+            countdownText: document.getElementById('countdown-text'),
+            countdownCircle: document.getElementById('countdown-circle'),
+            wordInput: document.getElementById('game-word-input'),
+            btnSubmit: document.getElementById('btn-submit-word'),
+            btnRefresh: document.getElementById('btn-refresh-word'),
+            btnGiveUp: document.getElementById('btn-give-up'),
+            message: document.getElementById('game-message'),
+            historyTrack: document.getElementById('history-track'),
+            avatarRed: document.getElementById('avatar-red'),
+            avatarBlue: document.getElementById('avatar-blue')
+        };
+
+        const GameState = {
+            playing: false,
+            currentPlayer: 1, // 1: 红方, 2: 蓝方
+            targetPinyin: '', // 当前需要接的拼音
+            timeLimit: 15,
+            timeLeft: 15,
+            timerId: null,
+            history: new Set()
+        };
+
+        // 1. 初始化游戏
+        GameDOM.btnStart.addEventListener('click', startGame);
+        GameDOM.btnGiveUp.addEventListener('click', () => gameOver('放弃对局，游戏结束'));
+        GameDOM.btnRefresh.addEventListener('click', fetchNewTarget);
+        
+        GameDOM.btnSubmit.addEventListener('click', submitWord);
+        GameDOM.wordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitWord();
+        });
+
+        async function startGame() {
+            GameState.playing = true;
+            GameState.timeLimit = parseInt(GameDOM.timerSelect.value) || 15;
+            GameState.history.clear();
+            GameDOM.historyTrack.innerHTML = '';
+            
+            // UI 切换
+            GameDOM.controls.classList.add('hidden');
+            GameDOM.arena.classList.remove('hidden');
+            GameDOM.wordInput.disabled = false;
+            GameDOM.btnSubmit.disabled = false;
+            GameDOM.wordInput.value = '';
+            
+            updateTurnUI();
+            await fetchNewTarget(); // 系统给出一个初始词
+        }
+
+        // 2. 获取新词 (死局换词/初始化)
+        async function fetchNewTarget() {
+            stopTimer();
+            showMessage("系统求签中...", "text-blue-500");
+            GameDOM.wordInput.disabled = true;
+
+            try {
+                const res = await fetch('/api/idioms/random?count=1');
+                const json = await res.json();
+                
+                if (json.success && json.data.length > 0) {
+                    const idiom = json.data[0];
+                    // 直接使用后端返回的 last 字段
+                    const lastPinyin = idiom.last || (idiom.pinyin_r ? idiom.pinyin_r.split(' ').pop() : ''); 
+                    
+                    GameState.targetPinyin = lastPinyin;
+                    GameState.history.add(idiom.word);
+                    
+                    // UI 显示
+                    GameDOM.targetDisplay.innerHTML = `<span class="text-sm text-gray-500">上个成语：</span>${idiom.word} <i class="fas fa-arrow-right text-sm text-gray-300 mx-2"></i> <span class="bg-orange-100 px-3 py-1 rounded-full border border-orange-200">${lastPinyin}</span>`;
+                    appendHistory(idiom.word, true);
+                    showMessage("", "");
+                    
+                    // 重新开始回合
+                    GameDOM.wordInput.disabled = false;
+                    GameDOM.wordInput.focus();
+                    GameState.timeLeft = GameState.timeLimit; // 确保计时器重置
+                    startTimer();
+                }
+            } catch (e) {
+                showMessage("获取初始题目失败，请重试", "text-red-500");
+            }
+        }
+
+        // 3. 提交词汇与校验
+        async function submitWord() {
+            if (!GameState.playing) return;
+            const word = GameDOM.wordInput.value.trim().replace(/\s+/g, '');
+            if (!word) return;
+            
+            // 本地查重
+            if (GameState.history.has(word)) {
+                showMessage(`「${word}」已经使用过了！`, "text-red-500");
+                return;
+            }
+
+            // 暂停倒计时等待服务端校验
+            stopTimer();
+            GameDOM.wordInput.disabled = true;
+            GameDOM.btnSubmit.disabled = true;
+            showMessage("判卷中...", "text-blue-500");
+
+            try {
+                // 使用 URLSearchParams 构建查询字符串，避免 Jinja2 将 & 转义为 &amp;
+                const params = new URLSearchParams({word: word, target: GameState.targetPinyin});
+                const res = await fetch('/api/idioms/validate_chain?' + params.toString());
+                const json = await res.json();
+
+                if (json.valid) {
+                    // 接龙成功
+                    GameState.history.add(word);
+                    GameState.targetPinyin = json.data.last_pinyin;
+                    
+                    // 更新 UI
+                    GameDOM.targetDisplay.innerHTML = `<span class="text-sm text-gray-500">上个成语：</span>${word} <i class="fas fa-arrow-right text-sm text-gray-300 mx-2"></i> <span class="bg-orange-100 px-3 py-1 rounded-full border border-orange-200">${json.data.last_pinyin}</span>`;
+                    appendHistory(word, false);
+                    GameDOM.wordInput.value = '';
+                    showMessage("接的好！", "text-green-500");
+                    
+                    // 切换回合 (单人模式下直接重置倒计时)
+                    GameState.timeLeft = GameState.timeLimit;
+                    updateTurnUI();
+                    GameDOM.wordInput.disabled = false;
+                    GameDOM.btnSubmit.disabled = false;
+                    GameDOM.wordInput.focus();
+                    startTimer();
+                    
+                    // 顺便播报一下成功的成语
+                    playTTS(word, GameDOM.btnSubmit); 
+                    
+                } else {
+                    // 接龙失败 (词不存在或发音不对，或者 API 400 Error)
+                    showMessage(json.reason || json.message || "网络请求参数异常", "text-red-500");
+                    GameDOM.wordInput.disabled = false;
+                    GameDOM.btnSubmit.disabled = false;
+                    GameDOM.wordInput.focus();
+                    startTimer(); // 恢复之前剩余的倒计时往下走
+                }
+            } catch (e) {
+                showMessage("网络校验失败", "text-red-500");
+                GameDOM.wordInput.disabled = false;
+                GameDOM.btnSubmit.disabled = false;
+                startTimer();
+            }
+        }
+
+        // 4. 定时器管理
+        function startTimer() {
+            if (!GameState.playing) return;
+            // 确保如果时间已经归零或越界时，被重置为上限
+            if (GameState.timeLeft <= 0) GameState.timeLeft = GameState.timeLimit;
+            
+            updateTimerUI();
+            
+            GameState.timerId = setInterval(() => {
+                GameState.timeLeft -= 1;
+                updateTimerUI();
+                
+                if (GameState.timeLeft <= 0) {
+                    stopTimer();
+                    gameOver('时间到！大侠请重新来过！');
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (GameState.timerId) {
+                clearInterval(GameState.timerId);
+                GameState.timerId = null;
+            }
+        }
+
+        function updateTimerUI() {
+            GameDOM.countdownText.innerText = GameState.timeLeft;
+            // 最后3秒爆红闪烁
+            if (GameState.timeLeft <= 3 && GameState.timeLeft > 0) {
+                GameDOM.countdownCircle.classList.add('animate-pulse', 'border-red-400', 'bg-red-50');
+                GameDOM.countdownText.classList.add('text-red-500');
+                GameDOM.countdownCircle.classList.remove('border-orange-200', 'bg-orange-50');
+                GameDOM.countdownText.classList.remove('text-orange-500');
+            } else {
+                GameDOM.countdownCircle.classList.remove('animate-pulse', 'border-red-400', 'bg-red-50');
+                GameDOM.countdownText.classList.remove('text-red-500');
+                GameDOM.countdownCircle.classList.add('border-orange-200', 'bg-orange-50');
+                GameDOM.countdownText.classList.add('text-orange-500');
+            }
+        }
+
+        // 5. 玩家轮转与状态更新
+        // 5. 回合更新
+        function updateTurnUI() {
+            GameDOM.turnIndicator.innerText = "你的回合";
+            GameDOM.turnIndicator.className = "text-sm font-bold text-red-500 uppercase tracking-widest mb-1";
+            GameDOM.avatarRed.classList.add('ring-4', 'ring-offset-2', 'ring-red-400', 'scale-105');
+        }
+
+        function showMessage(msg, colorClass) {
+            GameDOM.message.innerText = msg;
+            GameDOM.message.className = `h-6 mt-4 text-sm font-bold text-center transition-opacity ${colorClass}`;
+            GameDOM.message.style.opacity = msg ? '1' : '0';
+        }
+
+        function appendHistory(word, isSystem) {
+            const el = document.createElement('span');
+            el.className = isSystem 
+                ? 'px-3 py-1 bg-gray-100 text-gray-500 text-sm rounded-full border border-gray-200' 
+                : 'px-3 py-1 bg-red-50 text-red-600 text-sm rounded-full border border-red-200';
+            el.innerText = word;
+            GameDOM.historyTrack.appendChild(el);
+            // 保持最新
+            GameDOM.historyTrack.scrollLeft = GameDOM.historyTrack.scrollWidth;
+        }
+
+        // 6. 游戏结束
+        function gameOver(reason) {
+            GameState.playing = false;
+            stopTimer();
+            GameDOM.wordInput.disabled = true;
+            GameDOM.btnSubmit.disabled = true;
+            GameDOM.avatarRed.classList.remove('ring-4', 'scale-105');
+            
+            GameDOM.targetDisplay.innerHTML = `<span class="text-red-500 font-bold">${reason}</span>`;
+            
+            setTimeout(() => {
+                alert(reason + "\n点击确定返回准备大厅");
+                GameDOM.arena.classList.add('hidden');
+                GameDOM.controls.classList.remove('hidden');
+            }, 500);
+        }
+        
+        // 启动获取初始随机列表数据
+        fetchIdioms();
+    </script>
+</body>
+</html>

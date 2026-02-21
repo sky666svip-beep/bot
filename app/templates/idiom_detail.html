@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>成语详情</title>
+    <!-- Tailwind CSS (CDN for simple demo/dev) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 国风字体设定 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Serif SC', 'Songti SC', serif;
+            background-color: #fdfaf5; /* 浅米色主背景 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* 隐藏滚动条但保留滚动功能 */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* 顶部导航占位 */
+        .nav-pt { padding-top: 60px; }
+
+        /* ======== 卷轴卡片特效 ======== */
+        .scroll-card {
+            background-color: #fcf8e3; /* 浅米黄色 */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>'); /* 纸张细微纹理 */
+            position: relative;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        /* 卷轴顶部卷边 */
+        .scroll-top-edge {
+            height: 12px;
+            background: linear-gradient(to right, #d97706, #f59e0b, #d97706);
+            border-radius: 6px 6px 0 0;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.2);
+        }
+        /* 卷轴底部卷边 */
+        .scroll-bottom-edge {
+            height: 12px;
+            background: linear-gradient(to right, #d97706, #f59e0b, #d97706);
+            border-radius: 0 0 6px 6px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* ======== 拼音栏虚线格 ======== */
+        .pinyin-box {
+            border: 1px dashed #d1d5db; /* 浅灰色 */
+            color: #8B5A2B; /* 浅棕色 */
+            font-family: sans-serif;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        /* ======== 田字格 ======== */
+        .tian-grid {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border: 2px solid #e5e7eb;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: bold;
+            color: #1f2937;
+        }
+        @media (min-width: 768px) {
+            .tian-grid {
+                width: 80px;
+                height: 80px;
+                font-size: 3rem; /* text-5xl */
+            }
+        }
+        /* 田字格内十字虚线 */
+        .tian-grid::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            border-top: 1px dashed #d1d5db;
+            z-index: 0;
+        }
+        .tian-grid::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            border-left: 1px dashed #d1d5db;
+            z-index: 0;
+        }
+        .tian-char {
+            z-index: 10;
+        }
+
+        /* ======== 标签切换样式 ======== */
+        .tab-btn {
+            color: #6b7280; /* 默认灰 */
+            font-family: sans-serif;
+            position: relative;
+            padding-bottom: 4px;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            color: #111827; /* 激活黑 */
+            font-weight: bold;
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            background-color: #f97316; /* 橙色短划线 */
+            border-radius: 2px;
+        }
+
+        /* 内容区淡入动画 */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 播放动画 */
+        .playing-icon {
+            animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body class="min-h-screen relative text-gray-800 pb-10">
+
+    <!-- 顶部导航栏 -->
+    <nav class="fixed top-0 left-0 w-full h-[60px] bg-white z-50 flex items-center justify-center px-4 shadow-sm">
+        <button onclick="history.back()" class="absolute left-4 p-2 text-black hover:bg-gray-100 rounded-full transition-colors focus:outline-none">
+            <i class="fas fa-arrow-left text-lg"></i>
+        </button>
+        <span class="font-sans font-medium text-black text-lg tracking-wider">详情</span>
+    </nav>
+
+    <!-- 主体容器 -->
+    <main class="max-w-2xl mx-auto px-4 pt-24 pb-10">
+        
+        <!-- 加载状态 -->
+        <div id="loading" class="flex flex-col items-center justify-center py-20">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-orange-400 mb-4"></i>
+            <p class="text-gray-500 text-sm tracking-widest">研墨铺纸中...</p>
+        </div>
+
+        <!-- 详情内容区 (默认隐藏) -->
+        <div id="detail-content" class="hidden opacity-0 transition-opacity duration-500">
+            <!-- ========== 主视觉区 (卷轴卡片) ========== -->
+            <div class="scroll-card rounded-lg mb-8">
+                <!-- 顶部卷边 -->
+                <div class="scroll-top-edge"></div>
+                
+                <div class="p-6 md:p-8 flex flex-col items-center">
+                    <!-- 拼音栏 -->
+                    <div id="pinyin-display" class="pinyin-box px-6 py-2 mb-6 rounded-md bg-white/50 text-sm md:text-base">
+                        zhì shǒu kě rè
+                    </div>
+
+                    <!-- 田字格成语区 -->
+                    <div id="word-grid" class="flex justify-center gap-2 md:gap-4 mb-8">
+                        <!-- JS 动态填入田字格 -->
+                    </div>
+
+                    <!-- 读音按钮 -->
+                    <button onclick="playIdiomTTS()" class="group flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full px-6 py-2 transition-transform transform hover:scale-105 shadow-md focus:outline-none">
+                        <div class="relative w-5 h-5 flex items-center justify-center">
+                            <i id="audio-icon" class="fas fa-volume-up relative z-10 text-sm"></i>
+                            <!-- 波纹层 -->
+                            <div id="audio-wave" class="absolute inset-0 bg-white rounded-full opacity-0"></div>
+                        </div>
+                        <span class="font-sans text-sm tracking-widest font-medium">读音</span>
+                    </button>
+                </div>
+                
+                <!-- 底部卷边 -->
+                <div class="scroll-bottom-edge"></div>
+            </div>
+
+            <!-- ========== 内容切换区 ========== -->
+            <div class="bg-white/60 rounded-2xl p-6 shadow-sm border border-gray-100 backdrop-blur-sm">
+                <!-- 标签栏 -->
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button class="tab-btn w-1/3 pb-3 active" onclick="switchTab('explanation', this)">释义</button>
+                    <button class="tab-btn w-1/3 pb-3" onclick="switchTab('derivation', this)">出处</button>
+                    <button class="tab-btn w-1/3 pb-3" onclick="switchTab('example', this)">造句</button>
+                </div>
+
+                <!-- 对应的文本渲染区 -->
+                <div class="min-h-[150px]">
+                    <!-- 释义 -->
+                    <div id="tab-explanation" class="tab-content text-gray-800 leading-relaxed text-justify tracking-wide"></div>
+                    <!-- 出处 -->
+                    <div id="tab-derivation" class="tab-content text-gray-800 leading-relaxed text-justify tracking-wide hidden"></div>
+                    <!-- 造句 -->
+                    <div id="tab-example" class="tab-content text-gray-800 leading-relaxed text-justify tracking-wide hidden"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // 从模板引擎获取 ID，或通过 URL 获取 (当前采用 Jinja 渲染的变量)
+        // 假设 Flask 传递了 idiom_id = {{ idiom_id }}
+        const idiomId = {{ idiom_id|tojson }};
+        let currentIdiomWord = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+             if (idiomId) {
+                fetchIdiomDetail(idiomId);
+             } else {
+                showError("缺少成语标识");
+             }
+        });
+
+        async function fetchIdiomDetail(id) {
+            try {
+                const response = await fetch(`/api/idioms/${id}`);
+                const res = await response.json();
+                if (res.success && res.data) {
+                    renderIdiom(res.data);
+                } else {
+                    showError(res.message || "获取成语失败");
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+                showError("网络请求失败，请稍后再试");
+            }
+        }
+
+        function renderIdiom(data) {
+            // 保存给 TTS 使用
+            currentIdiomWord = data.word || '';
+
+            // 1. 拼音
+            document.getElementById('pinyin-display').textContent = data.pinyin || '';
+
+            // 2. 渲染田字格
+            const gridContainer = document.getElementById('word-grid');
+            gridContainer.innerHTML = '';
+            for (let i = 0; i < currentIdiomWord.length; i++) {
+                const char = currentIdiomWord[i];
+                const charDiv = document.createElement('div');
+                charDiv.className = 'tian-grid rounded-sm shadow-inner bg-opacity-90';
+                charDiv.innerHTML = `<span class="tian-char">${char}</span>`;
+                gridContainer.appendChild(charDiv);
+            }
+
+            // 3. 内容区
+            document.getElementById('tab-explanation').innerHTML = formatText(data.explanation || '暂无释义');
+            document.getElementById('tab-derivation').innerHTML = formatText(data.derivation || '暂无出处');
+            document.getElementById('tab-example').innerHTML = formatText(data.example || '暂无造句');
+
+            // 隐藏 loading，展示内容
+            document.getElementById('loading').classList.add('hidden');
+            const contentDiv = document.getElementById('detail-content');
+            contentDiv.classList.remove('hidden');
+            // 简单的淡入效果
+            setTimeout(() => {
+                contentDiv.classList.remove('opacity-0');
+            }, 50);
+        }
+
+        function formatText(text) {
+            // 将换行替换为段落，增加行间距体验
+            return text.split('\n').filter(p => p.trim() !== '').map(p => `<p class="mb-3">${p}</p>`).join('');
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').innerHTML = `
+                <i class="fas fa-exclamation-circle text-3xl text-red-400 mb-4"></i>
+                <p class="text-gray-500">${msg}</p>
+            `;
+        }
+
+        // ====== 标签切换逻辑 ======
+        function switchTab(tabId, btnElement) {
+            // 1. 重置所有按钮样式
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // 2. 隐藏所有内容区
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('fade-in');
+            });
+            
+            // 3. 激活当前
+            btnElement.classList.add('active');
+            const targetContent = document.getElementById(`tab-${tabId}`);
+            targetContent.classList.remove('hidden');
+            
+            // 强迫重绘以触发动画
+            void targetContent.offsetWidth;
+            targetContent.classList.add('fade-in');
+        }
+
+        // ====== 发音逻辑 (Web Speech API) ======
+        function playIdiomTTS() {
+            if (!currentIdiomWord) return;
+
+            // 1. 掐断上一句
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+
+            // 2. 处理动画
+            const wave = document.getElementById('audio-wave');
+            wave.classList.add('playing-icon');
+
+            // 3. 播放（限定于只播放具体的成语四个字）
+            const utterance = new SpeechSynthesisUtterance(currentIdiomWord);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9; // 稍微慢一点更像朗读
+            
+            // 播放结束移除动画
+            utterance.onend = () => {
+                wave.classList.remove('playing-icon');
+            };
+            utterance.onerror = () => {
+                wave.classList.remove('playing-icon');
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+    </script>
+</body>
+</html>

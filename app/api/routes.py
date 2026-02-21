@@ -9,7 +9,7 @@ from docx import Document
 from sqlalchemy import func, or_
 from app.services.handwriting_service import handwriting_service
 from app.services.paddle_service import paddle_service
-from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary
+from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary, Idiom
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
 from app.services.llm_service import solve_with_vision, extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
@@ -578,6 +578,17 @@ def word_match_page(): return render_template('word_match.html')
 @main.route('/redesign')
 def redesign_preview(): return render_template('index_redesign.html')
 
+@main.route('/idiom_pk')
+def idiom_pk_page(): return render_template('idiom_pk.html')
+
+@main.route('/idioms_all')
+def idioms_all_page(): return render_template('idioms_all.html')
+
+@main.route('/idiom/<int:id>')
+def idiom_detail_page(id): 
+    # Render template, passing id to front-end for data fetching
+    return render_template('idiom_detail.html', idiom_id=id)
+
 # === 单词消消乐 API ===
 @api_bp.route('/words', methods=['GET'])
 def get_random_words():
@@ -592,5 +603,131 @@ def get_random_words():
             "success": True,
             "data": [w.to_dict() for w in words]
         })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+# === 成语 PK API ===
+@api_bp.route('/idioms/random', methods=['GET'])
+def get_random_idioms():
+    """获取随机成语"""
+    try:
+        count = request.args.get('count', 10, type=int)
+        idioms = Idiom.query.order_by(func.random()).limit(count).all()
+        
+        return jsonify({
+            "success": True,
+            "data": [idiom.to_dict() for idiom in idioms]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@api_bp.route('/idioms/all', methods=['GET'])
+def get_all_idioms():
+    """获取成语列表（支持分页）"""
+    try:
+        offset = request.args.get('offset', 0, type=int)
+        limit = request.args.get('limit', 50, type=int)
+        idioms = Idiom.query.order_by(Idiom.id).offset(offset).limit(limit).all()
+        
+        return jsonify({
+            "success": True,
+            "data": [idiom.to_dict() for idiom in idioms]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@api_bp.route('/idioms/<int:id>', methods=['GET'])
+def get_idiom_detail(id):
+    """获取单个成语详情"""
+    try:
+        idiom = Idiom.query.get(id)
+        if not idiom:
+            return jsonify({"success": False, "message": "成语不存在"}), 404
+            
+        return jsonify({
+            "success": True,
+            "data": idiom.to_dict()
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@api_bp.route('/idioms/search', methods=['GET'])
+def search_idioms():
+    """搜索成语"""
+    try:
+        keyword = request.args.get('keyword', '').strip()
+        if not keyword:
+            return jsonify({"success": True, "data": []})
+            
+        # 移除关键词中的所有空格以便于拼音无缝搜索
+        clean_keyword = keyword.replace(' ', '')
+        
+        idioms = Idiom.query.filter(
+            or_(
+                Idiom.word.like(f"%{keyword}%"),
+                Idiom.abbreviation.like(f"{clean_keyword}%"),
+                func.replace(Idiom.pinyin_r, ' ', '').like(f"{clean_keyword}%")
+            )
+        ).limit(20).all()
+        
+        return jsonify({
+            "success": True,
+            "data": [idiom.to_dict() for idiom in idioms]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@api_bp.route('/idioms/validate_chain', methods=['GET'])
+def validate_idiom_chain():
+    """
+    验证成语接龙是否合法 (同音不同字)
+    参数:
+    - word: 用户输入的成语
+    - target: 需要匹配的起始拼音 (上一个成语最后一个字的读音，无声调)
+    """
+    try:
+        word = request.args.get('word', '').strip()
+        target_pinyin = request.args.get('target', '').strip()
+        
+        if not word or not target_pinyin:
+            return jsonify({"success": False, "message": "缺少必要的验证参数"}), 400
+            
+        # 1. 在词库中查找该成语
+        idiom = Idiom.query.filter_by(word=word).first()
+        if not idiom:
+            return jsonify({
+                "success": True, 
+                "valid": False, 
+                "reason": f"词库中未收录成语「{word}」"
+            })
+            
+        # 2. 直接获取数据库中已有的首尾拼音字段
+        first_pinyin = idiom.first
+        last_pinyin = idiom.last
+        
+        if not first_pinyin or not last_pinyin:
+            return jsonify({
+                 "success": True,
+                 "valid": False,
+                 "reason": f"成语「{word}」拼音数据缺失，无法判定"
+            })
+        
+        # 3. 比对目标拼音
+        if first_pinyin.lower() == target_pinyin.lower():
+            data = idiom.to_dict()
+            data['last_pinyin'] = last_pinyin # 下拉提示
+            
+            return jsonify({
+                "success": True,
+                "valid": True,
+                "data": data
+            })
+        else:
+            return jsonify({
+                "success": True,
+                "valid": False,
+                "reason": f"「{word}」读音为 {first_pinyin}，不满足以 {target_pinyin} 开头的条件"
+            })
+            
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})

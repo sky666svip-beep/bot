@@ -228,3 +228,33 @@ class Vocabulary(db.Model):
             'phonetic': self.phonetic,
             'definition': self.definition
         }
+
+# === 6. [新增] 成语表 (映射现有表) ===
+class Idiom(db.Model):
+    """
+    成语表：成语 PK 数据来源
+    """
+    __tablename__ = 'idiom'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    derivation = db.Column(db.Text)
+    example = db.Column(db.Text)
+    explanation = db.Column(db.Text)
+    pinyin = db.Column(db.Text)
+    word = db.Column(db.Text)
+    abbreviation = db.Column(db.Text)
+    pinyin_r = db.Column(db.Text)
+    first = db.Column(db.Text)
+    last = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'word': self.word,
+            'pinyin': self.pinyin,
+            'explanation': self.explanation,
+            'derivation': self.derivation,
+            'example': self.example,
+            'first': self.first,
+            'last': self.last
+        }

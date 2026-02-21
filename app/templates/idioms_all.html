@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>成语大全</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Serif SC', 'Songti SC', serif;
+            background-color: #fdfaf5; /* 浅米色主背景 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 与 idiom_pk 保持一致的列表项特效 */
+        .idiom-card {
+            transition: all 0.3s ease;
+        }
+        .idiom-card:active {
+            transform: scale(0.98);
+        }
+
+        /* 水印字体 */
+        .watermark-bg {
+            position: fixed;
+            bottom: -5%;
+            right: -10%;
+            font-size: 25vw;
+            color: rgba(200, 190, 180, 0.15); /* 加深一点点作为背景 */
+            font-weight: bold;
+            z-index: -1;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: -0.05em;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative text-gray-800 pb-20">
+    
+    <!-- 水印背景 -->
+    <div class="watermark-bg select-none">学海无涯</div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="fixed top-0 left-0 w-full h-[60px] bg-white z-50 flex items-center justify-between px-4 shadow-sm">
+        <button onclick="window.location.href='/idiom_pk'" class="p-2 text-black hover:bg-gray-100 rounded-full transition-colors focus:outline-none">
+            <i class="fas fa-arrow-left text-lg"></i>
+        </button>
+        <div class="absolute left-1/2 transform -translate-x-1/2 font-sans font-medium text-black text-lg tracking-wider">
+            成语大全
+        </div>
+        <div class="w-8"></div> <!-- 右侧占位保持居中 -->
+    </nav>
+
+    <!-- 主体容器 -->
+    <main class="max-w-3xl mx-auto px-4 pt-20">
+        
+        <!-- 列表容器 -->
+        <div id="idiom-list" class="flex flex-col gap-3">
+            <!-- 骨架屏占位 -->
+            <div id="loading-initial" class="flex justify-center py-20">
+                <i class="fas fa-circle-notch fa-spin text-3xl text-orange-400"></i>
+            </div>
+        </div>
+
+        <!-- 底部加载更多 -->
+        <div class="mt-8 flex justify-center">
+            <button id="load-more-btn" onclick="fetchIdioms()" class="hidden bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 px-6 py-2 rounded-full shadow-sm transition-all focus:outline-none text-sm font-sans tracking-wide">
+                加载更多...
+            </button>
+            <p id="no-more-text" class="hidden text-gray-400 text-sm font-sans tracking-widest my-4">没有更多成语了</p>
+            <div id="loading-more" class="hidden py-4">
+                 <i class="fas fa-circle-notch fa-spin text-xl text-orange-400"></i>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let currentOffset = 0;
+        const limit = 50;
+        let isFetching = false;
+        let hasMore = true;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchIdioms(true);
+        });
+
+        async function fetchIdioms(isInitial = false) {
+            if (isFetching || !hasMore) return;
+            isFetching = true;
+
+            const listContainer = document.getElementById('idiom-list');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const loadingMore = document.getElementById('loading-more');
+            const loadingInitial = document.getElementById('loading-initial');
+
+            if (isInitial) {
+                loadingInitial.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+                loadingMore.classList.remove('hidden');
+            }
+
+            try {
+                const response = await fetch(`/api/idioms/all?offset=${currentOffset}&limit=${limit}`);
+                const res = await response.json();
+                
+                if (isInitial) loadingInitial.classList.add('hidden');
+                loadingMore.classList.add('hidden');
+
+                if (res.success && res.data) {
+                    const idioms = res.data;
+                    
+                    if (idioms.length < limit) {
+                        hasMore = false;
+                        document.getElementById('no-more-text').classList.remove('hidden');
+                    } else {
+                        loadMoreBtn.classList.remove('hidden');
+                    }
+
+                    renderList(idioms);
+                    currentOffset += limit;
+                } else {
+                     console.error("Error from server:", res.message);
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+            } finally {
+                isFetching = false;
+            }
+        }
+
+        function renderList(idioms) {
+            const listContainer = document.getElementById('idiom-list');
+            
+            idioms.forEach(idiom => {
+                const row = document.createElement('div');
+                // 让整行都可点击，鼠标变小手
+                row.className = 'idiom-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md';
+                // 绑定跳转事件
+                row.onclick = () => {
+                    window.location.href = `/idiom/${idiom.id}`;
+                };
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                        <!-- 喇叭图标作为纯视觉提示或独立点击（需阻止冒泡） -->
+                        <button onclick="playAudio(event, '${idiom.word}')" class="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-100 transition-colors flex-shrink-0 focus:outline-none">
+                            <i class="fas fa-volume-up text-sm pointer-events-none"></i>
+                        </button>
+                        
+                        <!-- 文本区 -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-baseline gap-2 mb-1">
+                                <h3 class="text-xl font-bold text-gray-900 tracking-wide truncate">${idiom.word}</h3>
+                                <span class="text-sm text-gray-500 font-sans truncate">${idiom.pinyin}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 truncate font-sans">${idiom.explanation || '暂无释义'}</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                `;
+                listContainer.appendChild(row);
+            });
+        }
+
+        // 依然保留行内的快速听音功能
+        function playAudio(event, word) {
+            // 阻止事件冒泡使其不会触发跳转详情页
+            event.stopPropagation();
+            if (!word) return;
+
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+            
+            // 仅播报成语四字，无修饰
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+    </script>
+</body>
+</html>

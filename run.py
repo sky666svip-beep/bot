@@ -1,4 +1,7 @@
 # run.py
+import os
+os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成 .pyc 缓存，确保热重载始终读取最新源码
+
 from app import create_app, db
 from app.models import QuestionBank
 from app.services.nlp_service import nlp_engine

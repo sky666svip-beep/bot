@@ -660,10 +660,6 @@ body::before {
    6. 用户状态组件 (User Status Widget)
    ========================================= */
 .user-status-container {
-    /* position: fixed; Removed for Flex Layout */
-    /* top: 20px; */
-    /* right: 180px; */
-    /* z-index: 1000; handled by parent */
     display: flex;
     align-items: center;
     gap: 10px;
