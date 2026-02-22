@@ -21,11 +21,11 @@ body::before {
 :root {
   /* gradient-soft-blue-purple 蜜瓜青柠清新渐变（暖调清新） */
   --gradient-soft-blue-purple: linear-gradient(135deg, 
-    rgba(255, 252, 245, 0.85) 0%,  /* 淡蜜瓜白 */
-    rgba(247, 252, 245, 0.85) 25%, /* 极浅青柠绿 */
-    rgba(238, 248, 245, 0.85) 50%, /* 清透浅青 */
-    rgba(242, 250, 247, 0.85) 75%, /* 柔和青白 */
-    rgba(250, 253, 251, 0.85) 100%);/* 浅白收尾 */
+    rgba(255, 252, 245, 0.65) 0%,  /* 淡蜜瓜白 */
+    rgba(247, 252, 245, 0.65) 25%, /* 极浅青柠绿 */
+    rgba(238, 248, 245, 0.65) 50%, /* 清透浅青 */
+    rgba(242, 250, 247, 0.65) 75%, /* 柔和青白 */
+    rgba(250, 253, 251, 0.65) 100%);/* 浅白收尾 */
 }
 
 /* 主卡片容器 */
@@ -217,11 +217,17 @@ body::before {
     color: #1F7536 !important;
     box-shadow: 0 8px 20px rgba(31, 117, 54, 0.3) !important;
 }
-/* Mistake - Amber/Warning */
+/*综合科*/
 .bg-warning-subtle.text-warning {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
-    color: #f59e0b !important;
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3) !important;
+    background: linear-gradient(135deg, #fff9e6 0%, #ffecb3 100%) !important;
+    color: #ffbc32 !important; 
+    box-shadow: 0 8px 20px rgba(255, 188, 50, 0.3) !important;
+}
+/* Mistake - Amber/Warning */
+.bg-purple-500\/10.text-purple-600 {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+    color: #9333ea !important; /* 紫色主色 */
+    box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3) !important;
 }
 
 
@@ -356,8 +362,8 @@ body::before {
 /* 文档识别按钮 - 紫蓝渐变风格 */
 .btn-doc-corner {
     background: linear-gradient(135deg, 
-        rgba(233, 213, 255, 0.7) 0%,
-        rgba(191, 219, 254, 0.7) 100%
+        rgba(233, 213, 255, 0.2) 0%,
+        rgba(191, 219, 254, 0.2) 100%
     );
     border: 1px solid rgba(147, 112, 219, 0.3); /* 淡紫色边框 */
     color: #6366f1; /* 靛蓝色文字 */
@@ -395,8 +401,8 @@ body::before {
 }
 .btn-camera-outline:hover {
     background: linear-gradient(135deg,
-        rgba(191, 219, 254, 1) 0%,
-        rgba(233, 213, 255, 1) 100%
+        rgba(191, 219, 254, 0.6) 0%,
+        rgba(233, 213, 255, 0.6) 100%
     );
     color: white;
     border-color: transparent;
@@ -410,8 +416,8 @@ body::before {
 }
 .btn-formula-gradient:hover {
     background: linear-gradient(135deg,
-        rgba(233, 213, 255, 0.9) 0%,
-        rgba(191, 219, 254, 0.9) 100%
+        rgba(233, 213, 255, 0.6) 0%,
+        rgba(191, 219, 254, 0.6) 100%
     );
     box-shadow: 0 6px 12px rgba(126, 87, 194, 0.2);
     color: #4A148C !important;
@@ -482,7 +488,7 @@ body::before {
     #3186ff00 330deg 360deg  
     );
     /* 边框旋转动画 */
-    animation: glow-rotate 7s linear infinite;
+    animation: glow-rotate 10s linear infinite;
 }
 @keyframes glow-rotate {
     0% { --glow-angle: 0deg; }

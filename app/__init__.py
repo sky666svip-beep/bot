@@ -1,7 +1,7 @@
 # app/__init__.py
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from app.config import Config
-from app.extensions import db, login_manager
+from app.extensions import db, login_manager, mail
 
 
 def create_app(config_class=Config):
@@ -17,6 +17,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    mail.init_app(app)
 
     # user_loader 回调
     from app.models import User

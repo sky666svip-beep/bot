@@ -7,6 +7,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <!-- Cloudflare Turnstile script -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <div class="bg-blob blob-1"></div>
@@ -31,7 +33,7 @@
         <form method="POST">
             <div style="margin-bottom: 1rem;">
                 <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">用户名</label>
-                <input type="text" id="username" name="username" class="form-control" required autofocus placeholder="2-20个字符">
+                <input type="text" id="username" name="username" class="form-control" required autofocus placeholder="3-15个字符">
             </div>
 
             <div style="margin-bottom: 1rem;">
@@ -44,6 +46,24 @@
                 <input type="password" id="confirm" name="confirm" class="form-control" required placeholder="请再次输入密码">
             </div>
 
+            <div style="margin-bottom: 1rem;">
+                <label for="email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">邮箱 (选填)</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="绑定邮箱可用于找回密码或登录">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;" id="email-code-group" style="display: none;">
+                <label for="email_code" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">验证码</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="email_code" name="email_code" class="form-control" placeholder="6位数字验证码">
+                    <button type="button" id="send-code-btn" class="btn-auth" style="width: auto; padding: 0 1rem; white-space: nowrap; font-size: 0.9rem;">获取验证码</button>
+                </div>
+            </div>
+
+            <!-- Cloudflare Turnstile Widget -->
+            <div style="margin-bottom: 1.5rem; display: flex; justify-content: center;">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="auto"></div>
+            </div>
+
             <button type="submit" class="btn-auth">
                 <i class="fas fa-user-plus me-2"></i> 注册账号
             </button>
@@ -53,5 +73,90 @@
             已有账号？ <a href="{{ url_for('auth.login') }}">直接登录</a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const emailInput = document.getElementById('email');
+            const codeGroup = document.getElementById('email-code-group');
+            const sendCodeBtn = document.getElementById('send-code-btn');
+            
+            // 监听邮箱输入框，只有填写了邮箱才显示验证码框
+            emailInput.addEventListener('input', () => {
+                if(emailInput.value.trim().length > 0) {
+                    codeGroup.style.display = 'block';
+                    document.getElementById('email_code').required = true;
+                } else {
+                    codeGroup.style.display = 'none';
+                    document.getElementById('email_code').required = false;
+                }
+            });
+
+            // 初始化检查一次
+            if(emailInput.value.trim().length > 0) {
+                codeGroup.style.display = 'block';
+                document.getElementById('email_code').required = true;
+            } else {
+                codeGroup.style.display = 'none';
+                document.getElementById('email_code').required = false;
+            }
+
+            // 发送验证码逻辑
+            sendCodeBtn.addEventListener('click', async () => {
+                const email = emailInput.value.trim();
+                const emailRegex = /^\S+@\S+\.\S+$/;
+                
+                if (!emailRegex.test(email)) {
+                    alert('请输入有效的邮箱地址');
+                    return;
+                }
+
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.textContent = '发送中...';
+
+                try {
+                    const response = await fetch('/api/auth/send_code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email: email, purpose: 'verify' })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('验证码发送成功，请前往邮箱查看。\n若未收到邮件，请检查垃圾邮箱。');
+                        startCountdown(60);
+                    } else {
+                        alert(result.message || '发送失败，请重试');
+                        resetButton();
+                    }
+                } catch (err) {
+                    alert('网络错误，请稍后重试');
+                    resetButton();
+                }
+            });
+
+            function startCountdown(seconds) {
+                let remaining = seconds;
+                sendCodeBtn.disabled = true;
+                
+                const timer = setInterval(() => {
+                    sendCodeBtn.textContent = `${remaining} 秒后重试`;
+                    remaining--;
+                    
+                    if (remaining < 0) {
+                        clearInterval(timer);
+                        resetButton();
+                    }
+                }, 1000);
+            }
+
+            function resetButton() {
+                sendCodeBtn.disabled = false;
+                sendCodeBtn.textContent = '获取验证码';
+            }
+        });
+    </script>
 </body>
 </html>

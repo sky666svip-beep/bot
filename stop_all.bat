@@ -12,5 +12,5 @@ schtasks /Delete /TN "ChoiceBot-Server" /F 2>nul
 schtasks /Delete /TN "ChoiceBot-Tunnel" /F 2>nul
 
 echo.
-echo ✅ All services have been stopped, and the automatic startup on boot has been canceled.
+echo  All services have been terminated, and the automatic startup on boot has been disabled.
 pause

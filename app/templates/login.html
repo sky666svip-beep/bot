@@ -7,6 +7,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <!-- Cloudflare Turnstile script -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <div class="bg-blob blob-1"></div>
@@ -30,8 +32,8 @@
 
         <form method="POST">
             <div style="margin-bottom: 1rem;">
-                <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">用户名</label>
-                <input type="text" id="username" name="username" class="form-control" required autofocus placeholder="输入您的用户名">
+                <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #475569;">用户名或邮箱</label>
+                <input type="text" id="username" name="username" class="form-control" required autofocus placeholder="输入您的用户名或绑定的邮箱">
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -39,9 +41,17 @@
                 <input type="password" id="password" name="password" class="form-control" required placeholder="输入您的密码">
             </div>
 
-            <div style="margin-bottom: 1.5rem; display: flex; align-items: center;">
-                <input type="checkbox" id="remember" name="remember" style="margin-right: 0.5rem; width: 16px; height: 16px; accent-color: #8b5cf6;">
-                <label for="remember" style="font-size: 0.9rem; color: #64748b; cursor: pointer;">记住我</label>
+            <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" id="remember" name="remember" style="margin-right: 0.5rem; width: 16px; height: 16px; accent-color: #8b5cf6;">
+                    <label for="remember" style="font-size: 0.9rem; color: #64748b; cursor: pointer;">记住我</label>
+                </div>
+                <a href="{{ url_for('auth.forgot_password') }}" style="font-size: 0.9rem; color: #8b5cf6; text-decoration: none;">忘记密码？</a>
+            </div>
+
+            <!-- Cloudflare Turnstile Widget -->
+            <div style="margin-bottom: 1.5rem; display: flex; justify-content: center;">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="auto"></div>
             </div>
 
             <button type="submit" class="btn-auth">

@@ -12,6 +12,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -23,6 +24,18 @@ class User(db.Model, UserMixin):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class VerificationCode(db.Model):
+    """验证码表"""
+    __tablename__ = 'verification_code'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False, index=True)
+    code = db.Column(db.String(10), nullable=False)
+    purpose = db.Column(db.String(50), nullable=False, default='verify') # verify, reset_password
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
 
 
 class QuestionBank(db.Model):

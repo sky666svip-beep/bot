@@ -8,94 +8,32 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        /* CSS Variables */
-        :root {
-            --bg-color: #fdfaf5;
-        }
-
-        /* 基础与字体设定 */
-        body {
-            background-color: var(--bg-color);
-            font-family: 'Noto Serif SC', serif;
-            position: relative;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* 国风成语大字水印背景 */
-        .watermark-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        
-        .watermark-text {
-            position: absolute;
-            font-size: 20rem;
-            color: rgba(0, 0, 0, 0.02);
-            font-weight: 900;
-            white-space: nowrap;
-            user-select: none;
-            transform: rotate(-15deg);
-        }
-
-        /* VS 立体文字特效 */
-        .vs-text {
-            font-size: 4rem;
-            font-weight: 900;
-            font-style: italic;
-            background: linear-gradient(135deg, #3b82f6, #f97316);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.1));
-            display: inline-block;
-        }
-        
-        /* VS 渐变条底色 */
-        .vs-bar-bg {
-            background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(249,115,22,0.1) 100%);
-        }
-
-        /* 喇叭图标动画 */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-        .playing i {
-            animation: pulse-ring 1s infinite cubic-bezier(0.66, 0, 0, 1);
-            color: #3b82f6;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/idiom.css') }}">
 </head>
 <body class="antialiased text-gray-800 pb-10">
 
     <!-- 水印层 -->
     <div class="watermark-bg">
-        <div class="watermark-text" style="top: -5%; left: -10%;">成语</div>
-        <div class="watermark-text" style="top: 40%; right: -20%;">对决</div>
-        <div class="watermark-text" style="bottom: -10%; left: 10%;">学海</div>
+        <div class="pk-watermark-text" style="top: -5%; left: -10%;">成语</div>
+        <div class="pk-watermark-text" style="top: 40%; right: -20%;">对决</div>
+        <div class="pk-watermark-text" style="bottom: -10%; left: 10%;">学海</div>
     </div>
 
     <!-- 顶部导航栏 -->
-    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <a href="/" class="text-gray-600 hover:text-blue-600 transition-colors cursor-pointer w-10">
-                <i class="fas fa-arrow-left text-xl"></i>
+    <nav class="fixed-top-nav bg-white/80 backdrop-blur-md border-b border-orange-200 shadow-sm h-16">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-10">
+                <i class="fas fa-home text-xl"></i>
             </a>
-            <div class="bg-gray-100 rounded-xl px-4 py-1.5 flex items-center shadow-inner">
-                <span class="text-gray-700 font-bold tracking-widest text-sm">成语 PK</span>
+            <div class="bg-orange-100/60 backdrop-blur-sm rounded-full px-6 py-2 flex items-center shadow-inner border border-orange-200">
+                <span class="text-orange-800 font-bold tracking-widest text-lg">⚔️ 成语 PK ⚔️</span>
             </div>
             <div class="w-10"></div> <!-- 占位保持居中 -->
         </div>
     </nav>
 
     <!-- 主体容器 -->
-    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-8">
+    <main class="max-w-4xl mx-auto px-4 mt-20 space-y-8">
 
         <!-- 搜索区域 -->
         <section class="relative z-20">
@@ -110,7 +48,7 @@
         </section>
 
         <!-- 对战视觉区 (响应式) -->
-        <section class="vs-bar-bg rounded-3xl p-6 md:p-10 shadow-sm border border-orange-100 relative overflow-hidden flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 transition-all">
+        <section class="mt-2 vs-bar-bg rounded-3xl p-6 md:p-10 shadow-sm border border-orange-100 relative overflow-hidden flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 transition-all">
             
             <!-- 左方：红黑汉服少年 -->
             <div class="flex flex-col items-center gap-3 z-10 w-full md:w-auto">
@@ -232,7 +170,7 @@
                     <i class="fas fa-book-open text-orange-400 text-xl"></i> 成语列表
                 </h2>
                 <!-- 以后作为二级页面入口保留 -->
-                <a href="/idioms_all" class="text-sm font-semibold text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1 cursor-pointer">
+                <a href="/idioms_all" class="text-xl font-semibold text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1 cursor-pointer">
                     全部 <i class="fas fa-chevron-right text-xs"></i>
                 </a>
             </div>
@@ -436,13 +374,11 @@
             btnGiveUp: document.getElementById('btn-give-up'),
             message: document.getElementById('game-message'),
             historyTrack: document.getElementById('history-track'),
-            avatarRed: document.getElementById('avatar-red'),
-            avatarBlue: document.getElementById('avatar-blue')
+            avatarRed: document.getElementById('avatar-red')
         };
 
         const GameState = {
             playing: false,
-            currentPlayer: 1, // 1: 红方, 2: 蓝方
             targetPinyin: '', // 当前需要接的拼音
             timeLimit: 15,
             timeLeft: 15,
@@ -545,8 +481,7 @@
                     appendHistory(word, false);
                     GameDOM.wordInput.value = '';
                     showMessage("接的好！", "text-green-500");
-                    
-                    // 切换回合 (单人模式下直接重置倒计时)
+
                     GameState.timeLeft = GameState.timeLimit;
                     updateTurnUI();
                     GameDOM.wordInput.disabled = false;

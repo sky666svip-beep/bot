@@ -4,6 +4,10 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 from waitress import serve
+from dotenv import load_dotenv
+
+# 加载 .env 环境变量文件
+load_dotenv()
 
 # === 访问日志配置 ===
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')

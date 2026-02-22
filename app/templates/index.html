@@ -17,23 +17,18 @@
 		<div class="bg-blob bg-blob-purple" style="top: -10%; left: -10%;"></div>
 		<div class="bg-blob bg-blob-blue" style="bottom: -10%; right: -10%;"></div>
 	</div>
-
 	<div id="sakura-container"></div>
-	
 	<!-- 顶部导航栏 -->
 	<div class="app-header-bar">
 		<!-- 用户状态组件 -->
-		<div class="user-status-container">
-			{% if current_user.is_authenticated %}
-				<span class="user-greeting"><i class="fas fa-user-circle me-1"></i> {{ current_user.username }}</span>
-				<form action="{{ url_for('auth.logout') }}" method="post" style="display: inline;">
-					<button type="submit" class="btn-logout" title="退出登录"><i class="fas fa-sign-out-alt"></i></button>
-				</form>
-			{% else %}
-				<a href="{{ url_for('auth.login') }}" class="btn-login-header"><i class="fas fa-sign-in-alt me-1"></i> 登录</a>
-			{% endif %}
+		<div class="user-status-container"> {% if current_user.is_authenticated %} 
+            <a href="{{ url_for('auth.profile') }}" class="user-greeting text-decoration-none" style="color: inherit;" title="个人中心">
+                <i class="fas fa-user-circle me-1"></i> {{ current_user.username }}
+            </a>
+			<form action="{{ url_for('auth.logout') }}" method="post" style="display: inline;">
+				<button type="submit" class="btn-logout" title="退出登录"><i class="fas fa-sign-out-alt"></i></button>
+			</form> {% else %} <a href="{{ url_for('auth.login') }}" class="btn-login-header"><i class="fas fa-sign-in-alt me-1"></i> 登录</a> {% endif %}
 		</div>
-
 		<div class="clock-container">
 			<span id="hour" class="clock-unit">00</span><span class="colon">:</span>
 			<span id="minute" class="clock-unit">00</span><span class="colon">:</span>
@@ -45,16 +40,11 @@
 			<div class="col-lg-9 col-md-11">
 				<!-- Header (Moved Outside Card) -->
 				<div class="text-center mb-5 mt-4 space-y-3 slide-in">
-					<h1 class="redesign-header-title">
-						智能答题助手
-					</h1>
-					<p class="redesign-header-subtitle">
-						机器学习赋能 · 多模态融合解题引擎
-					</p>
+					<h1 class="redesign-header-title"> 智能答题助手 </h1>
+					<p class="redesign-header-subtitle"> 机器学习赋能 · 多模态融合解题引擎 </p>
 				</div>
-
-				<div class="card main-card p-5 mb-4 slide-in "style="margin-top: -35px;">
-					<div class="mb-3 position-relative"style="margin-top: -15px; margin-bottom: 10px;">
+				<div class="card main-card p-5 mb-4 slide-in " style="margin-top: -35px;">
+					<div class="mb-3 position-relative" style="margin-top: -15px; margin-bottom: 10px;">
 						<textarea id="rawText" class="form-control custom-textarea" rows="4" placeholder="✨ 请在此输入题目文本，或粘贴题目内容..."></textarea>
 						<button class="btn btn-sm btn-clear-corner position-absolute top-0 end-0 m-2" onclick="document.getElementById('rawText').value=''" title="清空">
 							<i class="fas fa-times"></i>
@@ -62,16 +52,14 @@
 						<!-- 文档识别按钮：移动到输入框右下角 -->
 						<input type="file" id="docUpload" accept=".pdf,.docx,.txt" style="display: none;" onchange="SearchEngine.handleDocUpload()">
 						<button class="btn btn-sm btn-doc-corner position-absolute bottom-0 end-0 m-2" onclick="document.getElementById('docUpload').click()" title="文档识别">
-							<i class="fas fa-file-alt me-1"></i> 文档识别
-						</button>
+							<i class="fas fa-file-alt me-1"></i> 文档识别 </button>
 					</div>
 					<div class="row g-2 mb-3">
 						<div class="col-md-6">
 							<div class="glow-btn-container" onclick="SearchEngine.processAndSolve()">
 								<div class="glow-btn-border"></div>
 								<button id="submitBtn" class="glow-btn-inner">
-									<i class="fas fa-search me-2"></i> 立即搜题
-								</button>
+									<i class="fas fa-search me-2"></i> 立即搜题 </button>
 							</div>
 						</div>
 						<div class="col-md-3">
@@ -81,8 +69,7 @@
 						</div>
 						<div class="col-md-3">
 							<a href="/formulas" class="btn btn-modern btn-formula-gradient  w-100 h-100">
-								<i class="fas fa-graduation-cap me-2"></i> 公式手册
-							</a>
+								<i class="fas fa-graduation-cap me-2"></i> 公式手册 </a>
 						</div>
 					</div>
 					<div id="statusMessage" class="status-message-modern">
@@ -93,37 +80,37 @@
 					</div>
 				</div>
 				<div id="resultArea" class="mt-4 mb-4 animate__animated animate__fadeIn" style="display: none;">
-				<div class="card shadow-sm border-0 overflow-hidden">
-					<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
-						<div>
-							<span id="sourceBadge" class="badge bg-primary">智能检索</span>
+					<div class="card shadow-sm border-0 overflow-hidden">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+							<div>
+								<span id="sourceBadge" class="badge bg-primary">智能检索</span>
+							</div>
+							<div class="d-flex align-items-center">
+								<button id="toggleMistakeBtn" class="btn btn-sm btn-outline-secondary ms-2" title="加入错题本">
+									<i class="far fa-star"></i>
+								</button>
+							</div>
 						</div>
-						<div class="d-flex align-items-center">
-							<button id="toggleMistakeBtn" class="btn btn-sm btn-outline-secondary ms-2" title="加入错题本">
-								<i class="far fa-star"></i>
-							</button>
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center mb-3">
+								<h6 class="card-title mb-0 text-success">
+									<i class="fas fa-check-circle me-2"></i>正确答案
+								</h6>
+								<button class="btn btn-sm btn-outline-success border-0" onclick="copyAnswer()">
+									<i class="far fa-copy me-1"></i><span id="copyTip">复制</span>
+								</button>
+							</div>
+							<div class="p-3 bg-success-subtle text-success rounded border border-success-subtle fw-bold" id="targetAnswer"> 等待搜索... </div>
 						</div>
-					</div>
-					<div class="card-body">
-						<div class="d-flex justify-content-between align-items-center mb-3">
-							<h6 class="card-title mb-0 text-success">
-								<i class="fas fa-check-circle me-2"></i>正确答案
-							</h6>
-							<button class="btn btn-sm btn-outline-success border-0" onclick="copyAnswer()">
-								<i class="far fa-copy me-1"></i><span id="copyTip">复制</span>
-							</button>
-						</div>
-						<div class="p-3 bg-success-subtle text-success rounded border border-success-subtle fw-bold" id="targetAnswer"> 等待搜索... </div>
-					</div>
-					<div class="card-footer bg-white p-4">
-						<h6 class="fw-bold mb-3"><i class="fas fa-book-open me-2 text-primary"></i>题目解析</h6>
-						<div id="explanation" class="reason-text text-secondary leading-relaxed">
+						<div class="card-footer bg-white p-4">
+							<h6 class="fw-bold mb-3"><i class="fas fa-book-open me-2 text-primary"></i>题目解析</h6>
+							<div id="explanation" class="reason-text text-secondary leading-relaxed">
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
 				<div class="category-nav-container mb-4 slide-in" style="animation-delay: 0.1s;">
-					<div class="row row-cols-2 row-cols-md-5 g-3 position-relative">
+					<div class="row row-cols-2 row-cols-md-6 g-3 position-relative">
 						<!-- Chinese -->
 						<div class="col position-relative subject-card">
 							<button class="nav-category-btn" type="button">
@@ -133,15 +120,15 @@
 								<h6 class="fw-bold">语文</h6>
 							</button>
 							<div class="compact-sub-menu">
-								<a href="{{ url_for('main.essay_correction_page') }}" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.essay_correction') }}" class="sub-func-btn-compact">
 									<i class="fas fa-pen-nib text-danger"></i>
 									<span>作文批改</span>
 								</a>
 								<a href="https://zwsc8.com/" target="_blank" class="sub-func-btn-compact">
-                                    <i class="fas fa-book text-danger"></i>
-                                    <span>作文大全</span>
-                                </a>
-								<a href="{{ url_for('main.poetry_page') }}" class="sub-func-btn-compact">
+									<i class="fas fa-book text-danger"></i>
+									<span>作文大全</span>
+								</a>
+								<a href="{{ url_for('main.poetry') }}" class="sub-func-btn-compact">
 									<i class="fas fa-scroll text-danger"></i>
 									<span>诗词鉴赏</span>
 								</a>
@@ -151,7 +138,6 @@
 								</a>
 							</div>
 						</div>
-						
 						<!-- Math -->
 						<div class="col position-relative subject-card">
 							<button class="nav-category-btn" type="button">
@@ -161,17 +147,16 @@
 								<h6 class="fw-bold">数学</h6>
 							</button>
 							<div class="compact-sub-menu">
-								<a href="/formulas" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.formulas') }}" class="sub-func-btn-compact">
 									<i class="fas fa-atom text-primary"></i>
 									<span>公式手册</span>
 								</a>
-								<a href="/calculator" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.calculator') }}" class="sub-func-btn-compact">
 									<i class="fas fa-calculator text-primary"></i>
 									<span>计算器</span>
 								</a>
 							</div>
 						</div>
-
 						<!-- English -->
 						<div class="col position-relative subject-card">
 							<button class="nav-category-btn" type="button">
@@ -181,7 +166,7 @@
 								<h6 class="fw-bold">英语</h6>
 							</button>
 							<div class="compact-sub-menu">
-								<a href="{{ url_for('main.essay_correction_page') }}" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.essay_correction') }}" class="sub-func-btn-compact">
 									<i class="fas fa-spell-check text-info"></i>
 									<span>作文批改</span>
 								</a>
@@ -189,13 +174,27 @@
 									<i class="fas fa-globe text-info"></i>
 									<span>作文大全</span>
 								</a>
-								<a href="/word_match" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.word_match') }}" class="sub-func-btn-compact">
 									<i class="fas fa-gamepad text-info"></i>
 									<span>单词消消乐</span>
 								</a>
 							</div>
 						</div>
-
+						<!-- Academic Subjects -->
+						<div class="col position-relative subject-card">
+							<button class="nav-category-btn" type="button">
+								<div class="icon-box bg-warning-subtle text-warning">
+									<i class="fas fa-globe-asia"></i>
+								</div>
+								<h6 class="fw-bold">综合科</h6>
+							</button>
+							<div class="compact-sub-menu menu-end" style="right: 0; left: auto; transform: translateY(10px);">
+								<a href="{{ url_for('main.Major_historical_events_page') }}" class="sub-func-btn-compact">
+									<i class="fas fa-lightbulb text-warning"></i>
+									<span>历史大事件</span>
+								</a>
+							</div>
+						</div>
 						<!-- Tools -->
 						<div class="col position-relative subject-card">
 							<button class="nav-category-btn" type="button">
@@ -209,32 +208,27 @@
 									<i class="fas fa-history text-secondary"></i>
 									<span>历史记录</span>
 								</a>
-								<a href="/simulation-exam" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.simulation_exam') }}" class="sub-func-btn-compact">
 									<i class="fas fa-clipboard-check text-secondary"></i>
 									<span>模拟测试</span>
 								</a>
-								<a href="{{ url_for('main.study_plan_page') }}" class="sub-func-btn-compact">
+								<a href="{{ url_for('main.study_plan') }}" class="sub-func-btn-compact">
 									<i class="fas fa-calendar-alt text-secondary"></i>
 									<span>学习计划</span>
 								</a>
 								<a href="https://www.kiddoworksheets.com/" target="_blank" class="sub-func-btn-compact">
-                                    <i class="fas fa-print text-secondary"></i>
-                                    <span>练习本定制</span>
+									<i class="fas fa-print text-secondary"></i>
+									<span>练习本定制</span>
 								</a>
 							</div>
 						</div>
-
 						<!-- Mistake Notebook -->
-						<div class="col">
-							{% if current_user.is_authenticated %}
-							<button class="nav-category-btn" onclick="Notebook.refreshAll(); new bootstrap.Offcanvas(document.getElementById('notebookDrawer')).show();">
-								<div class="icon-box bg-warning-subtle text-warning">
+						<div class="col"> {% if current_user.is_authenticated %} <button class="nav-category-btn" onclick="Notebook.refreshAll(); new bootstrap.Offcanvas(document.getElementById('notebookDrawer')).show();">
+								<div class="icon-box bg-purple-500/10 text-purple-600">
 									<i class="fas fa-edit"></i>
 								</div>
 								<h6 class="fw-bold">错题本</h6>
-							</button>
-							{% else %}
-							<a href="{{ url_for('auth.login') }}" class="nav-category-btn text-decoration-none">
+							</button> {% else %} <a href="{{ url_for('auth.login') }}" class="nav-category-btn text-decoration-none">
 								<div class="icon-box bg-secondary-subtle text-secondary position-relative">
 									<i class="fas fa-book"></i>
 									<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
@@ -242,15 +236,10 @@
 									</span>
 								</div>
 								<h6 class="fw-bold text-muted">错题本</h6>
-							</a>
-							{% endif %}
-						</div>
+							</a> {% endif %} </div>
 					</div>
 				</div>
-			</div>
-
-			{% if current_user.is_authenticated %}
-			<div class="row slide-in" style="animation-delay: 0.2s;">
+			</div> {% if current_user.is_authenticated %} <div class="row slide-in" style="animation-delay: 0.2s;">
 				<div class="col-md-6 mb-3">
 					<div class="card main-card p-3 h-100">
 						<h6 class="text-primary fw-bold mb-3"><i class="fas fa-chart-pie me-2"></i>知识点分布</h6>
@@ -263,9 +252,7 @@
 						<div id="heatmapChart" style="width: 100%; height: 250px;"></div>
 					</div>
 				</div>
-			</div>
-			{% else %}
-			<div class="row slide-in" style="animation-delay: 0.2s;">
+			</div> {% else %} <div class="row slide-in" style="animation-delay: 0.2s;">
 				<div class="col-12 mb-3">
 					<div class="card main-card p-5 text-center h-100 align-items-center justify-content-center" style="min-height: 280px; background: rgba(255,255,255,0.6)!important;">
 						<div class="mb-3">
@@ -273,14 +260,11 @@
 						</div>
 						<h5 class="text-muted mb-3 fw-bold">登录账号解锁更多内容</h5>
 						<p class="text-secondary small mb-4">查看更多学习记录</p>
-						<a href="{{ url_for('auth.login') }}" class="btn btn-primary rounded-pill px-4 shadow-sm">
-							立即登录 <i class="fas fa-arrow-right ms-2"></i>
+						<a href="{{ url_for('auth.login') }}" class="btn btn-primary rounded-pill px-4 shadow-sm"> 立即登录 <i class="fas fa-arrow-right ms-2"></i>
 						</a>
 					</div>
 				</div>
-			</div>
-			{% endif %}
-			<p class="text-center mt-4 text-muted small opacity-50">© 2026 Learning Assistant</p>
+			</div> {% endif %} <p class="text-center mt-4 text-muted small opacity-50">© 2026 Learning Assistant</p>
 		</div>
 	</div>
 	<div class="offcanvas offcanvas-start" tabindex="-1" id="notebookDrawer" style="width: 400px;">

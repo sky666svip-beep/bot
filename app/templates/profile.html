@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 智能答题助手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.0">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
+        .profile-container { max-width: 800px; margin: 40px auto; padding: 20px; }
+        .card-custom {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: rgba(248, 250, 252, 0.8);
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+        }
+        .card-body-custom { padding: 24px; }
+        .btn-send-code { width: 120px; border-radius: 8px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <!-- Return Home Button placed on upper left -->
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm" style="position: absolute; top: 20px; left: 20px; z-index: 1050;">
+        <i class="fas fa-arrow-left me-1"></i> 返回首页
+    </a>
+
+    <div class="profile-container slide-in">
+        <h2 class="mb-4 fw-bold text-center" style="color: #0f172a;"><i class="fas fa-user-circle me-2 text-primary"></i>个人中心</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category=='success' else 'danger' }} alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="fas {{ 'fa-check-circle' if category=='success' else 'fa-exclamation-circle' }} me-2"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Account Info -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <i class="fas fa-id-card text-info me-2"></i> 基本信息
+            </div>
+            <div class="card-body-custom">
+                <div class="row mb-3">
+                    <div class="col-sm-3 text-muted fw-bold">用户名</div>
+                    <div class="col-sm-9 text-dark">{{ user.username }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3 text-muted fw-bold">当前状态</div>
+                    <div class="col-sm-9">
+                        <span class="badge bg-success">已登录</span>
+                        {% if user.is_admin %}<span class="badge bg-danger ms-1">管理员</span>{% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-3 text-muted fw-bold">注册时间</div>
+                    <div class="col-sm-9 text-dark">{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '未知' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Binding Section -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <i class="fas fa-envelope text-primary me-2"></i> 邮箱绑定
+                {% if user.email %}
+                    <span class="badge bg-success ms-auto"><i class="fas fa-check-circle"></i> 已绑定</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark ms-auto"><i class="fas fa-exclamation-circle"></i> 未绑定</span>
+                {% endif %}
+            </div>
+            <div class="card-body-custom">
+                {% if user.email %}
+                <p class="text-muted small mb-4">当前绑定的邮箱：<strong>{{ user.email }}</strong>。您可以使用它登录或找回密码。若需更换邮箱，请直接填写新邮箱并验证。</p>
+                {% else %}
+                <p class="text-danger small mb-4"><i class="fas fa-shield-alt me-1"></i> 您尚未绑定邮箱。绑定后才可修改密码并在忘记密码时进行找回。</p>
+                {% endif %}
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="bind_email">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">新邮箱地址</label>
+                        <input type="email" class="form-control" name="email" id="bind-email-input" required placeholder="输入要绑定的新邮箱" value="{{ user.email if not user.email else '' }}">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">验证码</label>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" name="email_code" required placeholder="6位数字验证码">
+                            <button type="button" class="btn btn-outline-primary btn-send-code" id="btn-send-bind-code">获取验证码</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">
+                        <i class="fas fa-save me-2"></i> 确认绑定
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Change Password Section -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <i class="fas fa-key text-warning me-2"></i> 修改密码
+            </div>
+            <div class="card-body-custom">
+                {% if not user.email %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-lock fa-3x text-muted opacity-25 mb-3"></i>
+                        <p class="text-muted">为了您的账号安全，必须先绑定邮箱才能修改密码。</p>
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-4">修改密码前，我们需要向您的绑定邮箱 <strong>{{ user.email }}</strong> 发送验证码以确认是您本人操作。</p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="change_password">
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">原密码</label>
+                            <input type="password" class="form-control" name="old_password" required placeholder="输入当前使用的密码">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted small fw-bold">新密码</label>
+                                <input type="password" class="form-control" name="new_password" required placeholder="至少6个字符">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted small fw-bold">确认新密码</label>
+                                <input type="password" class="form-control" name="confirm" required placeholder="再次输入新密码">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-bold">安全验证码</label>
+                            <div class="d-flex gap-2">
+                                <input type="text" class="form-control" name="email_code" required placeholder="6位数字验证码">
+                                <button type="button" class="btn btn-outline-warning text-dark btn-send-code" id="btn-send-pwd-code">获取验证码</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning text-dark w-100 fw-bold shadow-sm">
+                            <i class="fas fa-pen me-2"></i> 确认修改密码
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="text-center pb-5">
+            <form action="{{ url_for('auth.logout') }}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-link text-danger text-decoration-none">
+                    <i class="fas fa-sign-out-alt me-1"></i> 安全退出账号
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- 脚本逻辑用于发送验证码 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendCodeAPI = async (email, purpose, btn) => {
+                const emailRegex = /^\S+@\S+\.\S+$/;
+                if (!emailRegex.test(email)) {
+                    alert('请输入有效的邮箱地址');
+                    return false;
+                }
+
+                const originalText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = '发送中...';
+
+                try {
+                    const response = await fetch('/api/auth/send_code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email, purpose: purpose })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('验证码发送成功，请前往邮箱查看。\n若未收到邮件，请检查垃圾邮箱。');
+                        return true;
+                    } else {
+                        alert(result.message || '发送失败，请重试');
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                        return false;
+                    }
+                } catch (err) {
+                    alert('网络错误，请稍后重试');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return false;
+                }
+            };
+
+            const startCountdown = (btn, seconds) => {
+                let remaining = seconds;
+                const originalText = '获取验证码';
+                
+                const timer = setInterval(() => {
+                    btn.textContent = `${remaining}s 后重试`;
+                    remaining--;
+                    
+                    if (remaining < 0) {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    }
+                }, 1000);
+            };
+
+            // 绑定邮箱验证码按钮
+            const btnBind = document.getElementById('btn-send-bind-code');
+            if (btnBind) {
+                btnBind.addEventListener('click', async () => {
+                    const email = document.getElementById('bind-email-input').value.trim();
+                    const success = await sendCodeAPI(email, 'verify', btnBind);
+                    if (success) startCountdown(btnBind, 60);
+                });
+            }
+
+            // 修改密码验证码按钮 (需要传递当前绑定的邮箱)
+            const btnPwd = document.getElementById('btn-send-pwd-code');
+            const currentUserEmail = "{{ user.email if user.email else '' }}";
+            if (btnPwd) {
+                btnPwd.addEventListener('click', async () => {
+                    if (!currentUserEmail) {
+                        alert('系统异常，无法获取当前绑定的邮箱');
+                        return;
+                    }
+                    const success = await sendCodeAPI(currentUserEmail, 'reset_password', btnPwd);
+                    if (success) startCountdown(btnPwd, 60);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

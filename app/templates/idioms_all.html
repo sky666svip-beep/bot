@@ -7,49 +7,20 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
-        body {
-            font-family: 'Noto Serif SC', 'Songti SC', serif;
-            background-color: #fdfaf5; /* 浅米色主背景 */
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* 与 idiom_pk 保持一致的列表项特效 */
-        .idiom-card {
-            transition: all 0.3s ease;
-        }
-        .idiom-card:active {
-            transform: scale(0.98);
-        }
-
-        /* 水印字体 */
-        .watermark-bg {
-            position: fixed;
-            bottom: -5%;
-            right: -10%;
-            font-size: 25vw;
-            color: rgba(200, 190, 180, 0.15); /* 加深一点点作为背景 */
-            font-weight: bold;
-            z-index: -1;
-            pointer-events: none;
-            white-space: nowrap;
-            letter-spacing: -0.05em;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/idiom.css') }}">
 </head>
 <body class="min-h-screen relative text-gray-800 pb-20">
     
     <!-- 水印背景 -->
-    <div class="watermark-bg select-none">学海无涯</div>
+    <div class="watermark-bg all-watermark select-none">学海无涯</div>
 
     <!-- 顶部导航栏 -->
-    <nav class="fixed top-0 left-0 w-full h-[60px] bg-white z-50 flex items-center justify-between px-4 shadow-sm">
-        <button onclick="window.location.href='/idiom_pk'" class="p-2 text-black hover:bg-gray-100 rounded-full transition-colors focus:outline-none">
-            <i class="fas fa-arrow-left text-lg"></i>
+    <nav class="fixed-top-nav h-[60px] bg-white/80 backdrop-blur-md border-b border-green-200 flex items-center justify-between px-4 shadow-sm">
+        <button onclick="window.location.href='/idiom_pk'" class="p-2 text-gray-600 hover:text-green-600 rounded-full transition-colors focus:outline-none">
+            <i class="fas fa-arrow-left text-xl"></i>
         </button>
-        <div class="absolute left-1/2 transform -translate-x-1/2 font-sans font-medium text-black text-lg tracking-wider">
-            成语大全
+        <div class="font-sans font-bold text-green-800 text-lg tracking-wider">
+            📚 成语大全
         </div>
         <div class="w-8"></div> <!-- 右侧占位保持居中 -->
     </nav>

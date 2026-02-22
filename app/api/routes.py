@@ -562,18 +562,18 @@ def view_history(): return render_template('history.html')
 @main.route('/formulas')
 def formulas(): return render_template('formulas.html')
 @main.route('/calculator')
-def calculator_page(): return render_template('calculator.html')
+def calculator(): return render_template('calculator.html')
 @main.route('/essay-correction')
-def essay_correction_page(): return render_template('essay.html')
+def essay_correction(): return render_template('essay.html')
 @main.route('/study_plan')
-def study_plan_page(): return render_template('study_plan.html')
+def study_plan(): return render_template('study_plan.html')
 @main.route('/simulation-exam')
-def simulation_exam_page(): return render_template('simulation_exam.html')
+def simulation_exam(): return render_template('simulation_exam.html')
 @main.route('/poetry')
-def poetry_page(): return render_template('poetry.html')
+def poetry(): return render_template('poetry.html')
 
 @main.route('/word_match')
-def word_match_page(): return render_template('word_match.html')
+def word_match(): return render_template('word_match.html')
 
 @main.route('/redesign')
 def redesign_preview(): return render_template('index_redesign.html')
@@ -588,6 +588,9 @@ def idioms_all_page(): return render_template('idioms_all.html')
 def idiom_detail_page(id): 
     # Render template, passing id to front-end for data fetching
     return render_template('idiom_detail.html', idiom_id=id)
+
+@main.route('/Major_historical_events')
+def Major_historical_events_page(): return render_template('Major_historical_events.html')
 
 # === 单词消消乐 API ===
 @api_bp.route('/words', methods=['GET'])

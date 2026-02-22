@@ -3,7 +3,14 @@
 /* === 1. 全局主题变量系统 (五色渐变) === */
 :root {
     /* 五色渐变背景色 */
-    --bg-gradient: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 25%, #dbeafe 50%, #e0f2fe 75%, #f0f9ff 100%);
+    --bg-gradient: linear-gradient(
+  135deg,
+  rgba(243, 232, 255, 0.5) 0%,    
+  rgba(224, 231, 255, 0.5) 25%,   
+  rgba(219, 234, 254, 0.5) 50%,   
+  rgba(224, 242, 254, 0.5) 75%,   
+  rgba(240, 249, 255, 0.5) 100%   
+);
     --bg-color: transparent;
     --text-primary: #2c3e50;
     --text-secondary: #64748b;
@@ -13,9 +20,9 @@
 
     /* 五色渐变主题色 */
     --theme-primary: #6366f1;    /* indigo-500 */
-    --theme-light: linear-gradient(135deg, rgba(243,232,255,0.5) 0%, rgba(224,231,255,0.5) 25%, rgba(219,234,254,0.5) 50%, rgba(224,242,254,0.5) 75%, rgba(240,249,255,0.5) 100%);
+    --theme-light: var(--bg-gradient);
     --theme-hover: #4f46e5;
-    --theme-border: rgba(224, 231, 255, 0.8);
+    --theme-border: rgba(224, 231, 255, 0.5);
     --btn-text: #fff;
 }
 
@@ -23,7 +30,7 @@
 body.theme-english {
     --theme-primary: #0ea5e9;    /* sky-500 */
     --theme-hover: #0284c7;
-    --theme-border: rgba(186, 230, 253, 0.8);
+    --theme-border: rgba(186, 230, 253, 0.5);
 }
 
 /* === 2. 基础排版与布局 === */
@@ -38,7 +45,7 @@ body {
 
 /* 导航栏样式覆盖 - 五色渐变 */
 .navbar-custom {
-    background: linear-gradient(135deg, rgba(243,232,255,0.95) 0%, rgba(224,231,255,0.95) 25%, rgba(219,234,254,0.95) 50%, rgba(224,242,254,0.95) 75%, rgba(240,249,255,0.95) 100%) !important;
+    background: var(--bg-gradient);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 10px rgba(99, 102, 241, 0.05);
@@ -70,13 +77,7 @@ body {
 
 /* === 3. 卡片式设计 - 五色渐变 === */
 .main-card {
-    background: linear-gradient(135deg, 
-        rgba(243, 232, 255, 0.85) 0%,
-        rgba(224, 231, 255, 0.85) 25%,
-        rgba(219, 234, 254, 0.85) 50%,
-        rgba(224, 242, 254, 0.85) 75%,
-        rgba(240, 249, 255, 0.85) 100%
-    );
+    background: var(--bg-gradient);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-radius: var(--border-radius);
@@ -117,22 +118,16 @@ body {
     border: 2px solid rgba(224, 231, 255, 0.6);
     border-radius: var(--border-radius);
     padding: 20px;
-    background: rgba(255, 255, 255, 0.4);
+    background:var(--bg-gradient);
     transition: var(--transition-base);
 }
 .input-area:hover, .input-area:focus-within {
     border-color: #6366f1;
-    background: linear-gradient(135deg, rgba(243,232,255,0.3) 0%, rgba(219,234,254,0.3) 100%);
+    background: var(--bg-gradient);
 }
 textarea.form-control {
     border: none;
-    background: linear-gradient(135deg, 
-        #f3e8ff 0%,   
-        #e0e7ff 25%,  
-        #dbeafe 50%,  
-        #e0f2fe 75%,  
-        #f0f9ff 100%  
-    );
+    background: linear-gradient(135deg, rgba(243,232,255,0.3) 0%, rgba(219,234,254,0.3) 100%);
     resize: none;
     font-size: 15px;
     box-shadow: none !important;
@@ -141,7 +136,7 @@ textarea.form-control {
     border-radius: 8px;
     border: 1px solid rgba(224, 231, 255, 0.6);
     color: #64748b;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(219, 234, 254, 0.5);
     font-size: 13px;
     padding: 6px 12px;
     transition: var(--transition-base);
@@ -192,7 +187,7 @@ textarea.form-control {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(135deg, rgba(243,232,255,0.3) 0%, rgba(224,231,255,0.3) 25%, rgba(219,234,254,0.3) 50%, rgba(224,242,254,0.3) 75%, rgba(240,249,255,0.3) 100%);
+    background: var(--bg-gradient);
     padding: 15px 20px;
     border-radius: 10px;
     margin-bottom: 20px;
@@ -215,7 +210,7 @@ textarea.form-control {
 
 /* 子模块卡片 (总评、纠错等) - 五色渐变风格 */
 .sub-card {
-    background: linear-gradient(135deg, rgba(243,232,255,0.5) 0%, rgba(224,231,255,0.5) 25%, rgba(219,234,254,0.5) 50%, rgba(224,242,254,0.5) 75%, rgba(240,249,255,0.5) 100%);
+    background: var(--bg-gradient);
     border: 1px solid rgba(224, 231, 255, 0.6);
     border-radius: 8px;
     padding: 16px;
@@ -248,8 +243,8 @@ textarea.form-control {
 
 /* 详情文本样式 */
 .detail-text { font-size: 14px; color: #4b5563; }
-.highlight-good { background-color: rgba(209, 250, 229, 0.8); padding: 2px 4px; border-radius: 4px; color: #047857; }
-.highlight-bad { background-color: rgba(254, 226, 226, 0.8); padding: 2px 4px; border-radius: 4px; color: #b91c1c; text-decoration: line-through; }
+.highlight-good { background-color: rgba(209, 250, 229, 0.5); padding: 2px 4px; border-radius: 4px; color: #047857; }
+.highlight-bad { background-color: rgba(254, 226, 226, 0.5); padding: 2px 4px; border-radius: 4px; color: #b91c1c; text-decoration: line-through; }
 .correction-arrow { color: #9ca3af; margin: 0 5px; font-size: 12px; }
 
 /* 加载动画 - 五色渐变风格 */
@@ -282,7 +277,7 @@ textarea.form-control {
 }
 
 .result-section::-webkit-scrollbar-thumb {
-    background-color: rgba(224, 231, 255, 0.8);
+    background-color: rgba(224, 231, 255, 0.5);
     border-radius: 10px;
     border: 1px solid transparent;
     background-clip: content-box;

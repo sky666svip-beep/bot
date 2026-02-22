@@ -1,0 +1,237 @@
+/* 国风字体和基础设定 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap');
+
+:root {
+    --bg-color: #fdfaf5;
+}
+
+/* 基础与字体设定 */
+body {
+    background-color: var(--bg-color);
+    font-family: 'Noto Serif SC', serif;
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 隐藏滚动条但保留滚动功能 */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+/* 水印背景通用样式 */
+.watermark-bg {
+    position: fixed;
+    z-index: -1;
+    pointer-events: none;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* 顶部导航栏通用样式 */
+.fixed-top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.nav-pt { 
+    padding-top: 60px; 
+}
+
+/* ======== 卷轴卡片特效 (用于详情页) ======== */
+.scroll-card {
+    background-color: #fcf8e3; /* 浅米黄色 */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>'); /* 纸张细微纹理 */
+    position: relative;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* 卷轴顶部卷边 */
+.scroll-top-edge {
+    height: 12px;
+    background: linear-gradient(to right, #d97706, #f59e0b, #d97706);
+    border-radius: 6px 6px 0 0;
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.2);
+}
+
+/* 卷轴底部卷边 */
+.scroll-bottom-edge {
+    height: 12px;
+    background: linear-gradient(to right, #d97706, #f59e0b, #d97706);
+    border-radius: 0 0 6px 6px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* ======== 拼音栏虚线格 ======== */
+.pinyin-box {
+    border: 1px dashed #d1d5db; /* 浅灰色 */
+    color: #8B5A2B; /* 浅棕色 */
+    font-family: sans-serif;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+/* ======== 田字格 ======== */
+.tian-grid {
+    width: 60px;
+    height: 60px;
+    background-color: white;
+    border: 2px solid #e5e7eb;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.25rem; /* text-4xl */
+    font-weight: bold;
+    color: #1f2937;
+}
+
+@media (min-width: 768px) {
+    .tian-grid {
+        width: 80px;
+        height: 80px;
+        font-size: 3rem; /* text-5xl */
+    }
+}
+
+/* 田字格内十字虚线 */
+.tian-grid::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    border-top: 1px dashed #d1d5db;
+    z-index: 0;
+}
+
+.tian-grid::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    border-left: 1px dashed #d1d5db;
+    z-index: 0;
+}
+
+.tian-char {
+    z-index: 10;
+}
+
+/* ======== 标签切换样式 ======== */
+.tab-btn {
+    color: #6b7280; /* 默认灰 */
+    font-family: sans-serif;
+    position: relative;
+    padding-bottom: 4px;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: #111827; /* 激活黑 */
+    font-weight: bold;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    background-color: #f97316; /* 橙色短划线 */
+    border-radius: 2px;
+}
+
+/* 内容区淡入动画 */
+.fade-in {
+    animation: fadeIn 0.4s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 播放动画 */
+.playing-icon {
+    animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+    0% { transform: scale(0.9); opacity: 1; }
+    100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* ======== 成语 PK 页面特有样式 ======== */
+
+/* 国风成语大字水印背景 */
+.pk-watermark-text {
+    font-size: 20rem;
+    color: rgba(0, 0, 0, 0.02);
+    font-weight: 900;
+    transform: rotate(-15deg);
+}
+
+/* VS 立体文字特效 */
+.vs-text {
+    font-size: 4rem;
+    font-weight: 900;
+    font-style: italic;
+    background: linear-gradient(135deg, #3b82f6, #f97316);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.1));
+    display: inline-block;
+}
+
+/* VS 渐变条底色 */
+.vs-bar-bg {
+    background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(249,115,22,0.1) 100%);
+}
+
+/* 喇叭图标动画 */
+@keyframes pulse-ring-pk {
+    0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.playing i {
+    animation: pulse-ring-pk 1s infinite cubic-bezier(0.66, 0, 0, 1);
+    color: #3b82f6;
+}
+
+/* ======== 成语列表项通用样式 ======== */
+.idiom-card {
+    transition: all 0.3s ease;
+}
+
+.idiom-card:active {
+    transform: scale(0.98);
+}
+
+/* 大全页面水印 */
+.all-watermark {
+    bottom: -5%;
+    right: -10%;
+    font-size: 25vw;
+    color: rgba(200, 190, 180, 0.15);
+    font-weight: bold;
+    letter-spacing: -0.05em;
+}

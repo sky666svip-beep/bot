@@ -1,0 +1,839 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>华夏历史时间线</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Google字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&amp;family=Noto+Serif+SC:wght@400;700&amp;display=swap" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rice: '#F5F0E6',         // 宣纸色
+                        ink: '#2D2D2A',          // 墨色
+                        ancient: '#8B4513',      // 古代史-棕色
+                        medieval: '#9E2A2B',     // 中古史-暗红
+                        modern: '#1A3A59',       // 近代史-靛蓝
+                        contemporary: '#0F515C'  // 现代史-深青
+                    },
+                    fontFamily: {
+                        calligraphy: ['"Ma Shan Zheng"', 'cursive'],
+                        song: ['"Noto Serif SC"', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .bg-rice-paper {
+                background-image: url('https://picsum.photos/id/106/1200/800');
+                background-size: cover;
+                background-blend-mode: overlay;
+            }
+            .border-dragon {
+                background-image: url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.184 20c.357-.13.72-.264.888-.14 1.24.916 1.8 2.376 3.36 2.825 1.14.34 1.74-.96 3.08-.96 1.34 0 1.94 1.3 3.08.96 1.56-.45 2.12-1.91 3.36-2.825.168-.125.53-.001.888.14 1.17.476 2.464-.943 3.92-1.088 1.06-.095 2.2.62 2.96 1.36.76-.74 1.9-.455 2.96-1.36 1.456.145 2.75 1.564 3.92 1.088.357-.13.72-.264.888-.14 1.24.916 1.8 2.376 3.36 2.825 1.14.34 1.74-.96 3.08-.96 1.34 0 1.94 1.3 3.08.96 1.56-.45 2.12-1.91 3.36-2.825.168-.125.53-.001.888.14V0H0v20c.357-.13.72-.264.888-.14 1.24.916 1.8 2.376 3.36 2.825 1.14.34 1.74-.96 3.08-.96 1.34 0 1.94 1.3 3.08.96 1.56-.45 2.12-1.91 3.36-2.825.168-.125.53-.001.888.14 1.17.476 2.464-.943 3.92-1.088 1.06-.095 2.2.62 2.96 1.36.76-.74 1.9-.455 2.96-1.36 1.456.145 2.75 1.564 3.92 1.088zM82.5 8c-1.5 0-2.75 1.25-2.75 2.75s1.25 2.75 2.75 2.75 2.75-1.25 2.75-2.75S84 8 82.5 8zm-35 0c-1.5 0-2.75 1.25-2.75 2.75s1.25 2.75 2.75 2.75 2.75-1.25 2.75-2.75S49 8 47.5 8zm-35 0c-1.5 0-2.75 1.25-2.75 2.75s1.25 2.75 2.75 2.75 2.75-1.25 2.75-2.75S14 8 12.5 8z' fill='%232D2D2A' fill-opacity='0.3' fill-rule='evenodd'/%3E%3C/svg%3E");
+            }
+            .timeline-dot {
+                transition: all 0.3s ease;
+            }
+            .event-card:hover .timeline-dot {
+                transform: scale(1.3);
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            }
+            .event-card {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .event-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .scroll-reveal {
+                opacity: 0;
+                transform: translateX(-50px);
+                transition: opacity 0.8s ease, transform 0.8s ease;
+            }
+            .scroll-reveal.active {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+    
+    <style>
+        /* 基础动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes scrollOpen {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+        
+        .timeline-container {
+            animation: scrollOpen 1.5s ease-out forwards;
+            transform-origin: left center;
+        }
+        
+        /* 水墨装饰效果 */
+        .ink-splash {
+            position: absolute;
+            opacity: 0.1;
+            z-index: 0;
+            filter: grayscale(100%);
+        }
+        
+        /* 时间线样式 */
+        .timeline-line {
+            height: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 滚动条样式 */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(45, 45, 42, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 回到顶部按钮动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .back-to-top {
+            animation: fadeInUp 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-rice bg-rice-paper text-ink font-song min-h-screen">
+    <!-- 水墨装饰元素 -->
+    <div class="ink-splash top-20 left-10 w-64 h-64 bg-ink rounded-full blur-3xl"></div>
+    <div class="ink-splash top-1/3 right-20 w-80 h-80 bg-ink rounded-full blur-3xl"></div>
+    <div class="ink-splash bottom-20 left-1/4 w-72 h-72 bg-ink rounded-full blur-3xl"></div>
+    
+    <!-- 页面容器 -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-hidden">
+        <!-- 页眉 -->
+        <header class="mb-12 text-center relative">
+            <div class="border-dragon p-1 mb-6">
+                <h1 class="font-calligraphy text-[clamp(2.5rem,5vw,4rem)] text-ink py-4 px-6 bg-rice/90 inline-block transform -rotate-1">
+                    华夏历史时间线
+                </h1>
+            </div>
+            <p class="text-lg md:text-xl max-w-3xl mx-auto italic">
+                上下五千年，纵横九万里，见证华夏文明的辉煌历程
+            </p>
+        </header>
+        
+        <!-- 移动端菜单按钮 -->
+        <div class="md:hidden fixed top-4 right-4 z-50">
+            <button id="menu-toggle" class="bg-rice/90 p-2 rounded-md shadow-md">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- 筛选和搜索区域 -->
+        <div id="filters-container" class="hidden md:block bg-rice/80 p-4 rounded-lg shadow-md mb-8 border border-ink/20">
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- 时期筛选 -->
+                <div class="flex flex-wrap gap-2">
+                    <button class="period-filter active px-4 py-2 rounded-full text-sm font-medium transition-all" data-period="all">
+                        全部时期
+                    </button>
+                    <button class="period-filter px-4 py-2 rounded-full text-sm font-medium transition-all" data-period="ancient">
+                        古代史
+                    </button>
+                    <button class="period-filter px-4 py-2 rounded-full text-sm font-medium transition-all" data-period="medieval">
+                        中古史
+                    </button>
+                    <button class="period-filter px-4 py-2 rounded-full text-sm font-medium transition-all" data-period="modern">
+                        近代史
+                    </button>
+                    <button class="period-filter px-4 py-2 rounded-full text-sm font-medium transition-all" data-period="contemporary">
+                        现代史
+                    </button>
+                </div>
+                
+                <!-- 搜索框 -->
+                <div class="relative flex-grow max-w-md ml-auto">
+                    <input type="text" id="search-input" placeholder="搜索历史事件..." class="w-full px-4 py-2 pl-10 rounded-full border border-ink/30 bg-rice/90 focus:outline-none focus:ring-2 focus:ring-ink/30">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-ink/60"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="fixed inset-0 bg-rice/95 z-40 transform translate-x-full transition-transform  duration-300 md:hidden">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="font-calligraphy text-2xl">菜单</h2>
+                    <button id="close-menu" class="p-2">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- 移动端筛选 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold mb-3">历史时期</h3>
+                    <div class="flex flex-col gap-2">
+                        <button class="period-filter active py-2 px-4 text-left rounded" data-period="all">
+                            全部时期
+                        </button>
+                        <button class="period-filter py-2 px-4 text-left rounded" data-period="ancient">
+                            古代史
+                        </button>
+                        <button class="period-filter py-2 px-4 text-left rounded" data-period="medieval">
+                            中古史
+                        </button>
+                        <button class="period-filter py-2 px-4 text-left rounded" data-period="modern">
+                            近代史
+                        </button>
+                        <button class="period-filter py-2 px-4 text-left rounded" data-period="contemporary">
+                            现代史
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 移动端搜索 -->
+                <div class="relative">
+                    <input type="text" id="mobile-search-input" placeholder="搜索历史事件..." class="w-full px-4 py-2 pl-10 rounded border border-ink/30 bg-rice/90 focus:outline-none focus:ring-2 focus:ring-ink/30">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-ink/60"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 时间线滑块导航 -->
+        <div class="mb-12">
+            <div class="flex justify-between items-center mb-2 px-4">
+                <span class="text-sm">公元前2070年</span>
+                <span class="text-sm">至今</span>
+            </div>
+            <input type="range" id="timeline-slider" min="0" max="100" value="0" class="w-full h-2 bg-ink/10 rounded-lg appearance-none cursor-pointer accent-ink">
+        </div>
+        
+        <!-- 历史时期标题 -->
+        <div class="mb-8 text-center">
+            <h2 id="period-title" class="font-calligraphy text-[clamp(1.8rem,3vw,2.5rem)] text-ink">
+                全部历史时期
+            </h2>
+        </div>
+        
+        <!-- 时间线容器 -->
+        <div class="timeline-container relative pb-16">
+            <!-- 古代史 -->
+            <section class="mb-16 scroll-reveal" data-period="ancient">
+                <h3 class="font-calligraphy text-2xl text-ancient mb-6 pl-2 border-l-4 border-ancient">
+                    古代史 (约公元前2070年-公元581年)
+                </h3>
+                <div class="timeline-line bg-ancient/30 mb-8 relative">
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[10%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-ancient border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[30%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-ancient border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[50%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-ancient border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[70%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-ancient border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[90%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-ancient border-4 border-rice"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 古代史事件1 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-ancient/20" data-period="ancient" data-year="前2070">
+                        <div class="flex items-start gap-4">
+                            <div class="text-ancient font-bold whitespace-nowrap mt-1">约前2070年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">夏朝建立</h4>
+                                <p class="text-ink/80">禹建立夏朝，这是中国历史上第一个世袭制朝代，标志着原始社会的结束和奴隶社会的开始。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 古代史事件2 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-ancient/20" data-period="ancient" data-year="前1046">
+                        <div class="flex items-start gap-4">
+                            <div class="text-ancient font-bold whitespace-nowrap mt-1">前1046年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">武王伐纣，西周建立</h4>
+                                <p class="text-ink/80">周武王姬发率领诸侯联军击败商纣王，建立周朝，定都镐京，史称西周，实行分封制。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 古代史事件3 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-ancient/20" data-period="ancient" data-year="前770">
+                        <div class="flex items-start gap-4">
+                            <div class="text-ancient font-bold whitespace-nowrap mt-1">前770年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">平王东迁，东周开始</h4>
+                                <p class="text-ink/80">周平王将都城从镐京迁至洛邑，开启东周时期，分为春秋和战国两个阶段，诸侯争霸局面形成。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 古代史事件4 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-ancient/20" data-period="ancient" data-year="前221">
+                        <div class="flex items-start gap-4">
+                            <div class="text-ancient font-bold whitespace-nowrap mt-1">前221年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">秦始皇统一中国</h4>
+                                <p class="text-ink/80">秦王嬴政灭六国，完成统一，建立秦朝，自称"始皇帝"，实行郡县制，统一文字、货币和度量衡。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 古代史事件5 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-ancient/20" data-period="ancient" data-year="202">
+                        <div class="flex items-start gap-4">
+                            <div class="text-ancient font-bold whitespace-nowrap mt-1">前202年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">汉朝建立</h4>
+                                <p class="text-ink/80">刘邦击败项羽，建立汉朝，定都长安，史称西汉，开创了"文景之治"和"汉武盛世"，是中国历史上强盛的朝代之一。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 中古史 -->
+            <section class="mb-16 scroll-reveal" data-period="medieval">
+                <h3 class="font-calligraphy text-2xl text-medieval mb-6 pl-2 border-l-4 border-medieval">
+                    中古史 (581年-1840年)
+                </h3>
+                <div class="timeline-line bg-medieval/30 mb-8 relative">
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[15%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-medieval border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[40%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-medieval border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[65%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-medieval border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[90%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-medieval border-4 border-rice"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 中古史事件1 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-medieval/20" data-period="medieval" data-year="581">
+                        <div class="flex items-start gap-4">
+                            <div class="text-medieval font-bold whitespace-nowrap mt-1">581年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">隋朝建立</h4>
+                                <p class="text-ink/80">杨坚建立隋朝，统一分裂已久的中国，开创三省六部制，开凿大运河，对后世影响深远。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 中古史事件2 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-medieval/20" data-period="medieval" data-year="618">
+                        <div class="flex items-start gap-4">
+                            <div class="text-medieval font-bold whitespace-nowrap mt-1">618年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">唐朝建立</h4>
+                                <p class="text-ink/80">李渊建立唐朝，是中国历史上最强盛的朝代之一，出现了"贞观之治"和"开元盛世"，文化经济高度繁荣。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 中古史事件3 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-medieval/20" data-period="medieval" data-year="960">
+                        <div class="flex items-start gap-4">
+                            <div class="text-medieval font-bold whitespace-nowrap mt-1">960年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">宋朝建立</h4>
+                                <p class="text-ink/80">赵匡胤发动陈桥兵变，建立宋朝，分为北宋和南宋，是中国古代商品经济最发达的时期，科技文化繁荣。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 中古史事件4 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-medieval/20" data-period="medieval" data-year="1271">
+                        <div class="flex items-start gap-4">
+                            <div class="text-medieval font-bold whitespace-nowrap mt-1">1271年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">元朝建立</h4>
+                                <p class="text-ink/80">忽必烈定国号为"大元"，建立元朝，是中国历史上第一个由少数民族建立的大一统王朝，疆域空前辽阔。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 中古史事件5 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-medieval/20" data-period="medieval" data-year="1368">
+                        <div class="flex items-start gap-4">
+                            <div class="text-medieval font-bold whitespace-nowrap mt-1">1368年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">明朝建立</h4>
+                                <p class="text-ink/80">朱元璋推翻元朝统治，建立明朝，加强中央集权，郑和七下西洋，明朝中后期出现资本主义萌芽。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 中古史事件6 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-medieval/20" data-period="medieval" data-year="1644">
+                        <div class="flex items-start gap-4">
+                            <div class="text-medieval font-bold whitespace-nowrap mt-1">1644年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">清朝建立</h4>
+                                <p class="text-ink/80">清军入关，建立清朝，是中国历史上最后一个封建王朝，前期出现"康乾盛世"，后期闭关锁国，逐渐落后于西方。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 近代史 -->
+            <section class="mb-16 scroll-reveal" data-period="modern">
+                <h3 class="font-calligraphy text-2xl text-modern mb-6 pl-2 border-l-4 border-modern">
+                    近代史 (1840年-1949年)
+                </h3>
+                <div class="timeline-line bg-modern/30 mb-8 relative">
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[10%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-modern border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[30%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-modern border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[50%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-modern border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[70%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-modern border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[90%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-modern border-4 border-rice"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 近代史事件1 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1840">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1840年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">鸦片战争</h4>
+                                <p class="text-ink/80">英国以林则徐虎门销烟为借口发动侵华战争，中国战败，被迫签订《南京条约》，中国开始沦为半殖民地半封建社会。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件2 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1861">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1861年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">洋务运动</h4>
+                                <p class="text-ink/80">清政府内部洋务派发起的自强运动，主张"师夷长技以制夷"，创办近代军事工业和民用企业，开启中国近代化进程。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件3 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1911">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1911年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">辛亥革命</h4>
+                                <p class="text-ink/80">武昌起义爆发，推翻清朝统治，结束中国两千多年的封建帝制，建立中华民国，是中国近代史上一次伟大的资产阶级民主革命。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件4 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1919">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1919年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">五四运动</h4>
+                                <p class="text-ink/80">因巴黎和会外交失败引发的爱国运动，是中国新民主主义革命的开端，促进了马克思主义在中国的传播。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件5 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1921">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1921年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">中国共产党成立</h4>
+                                <p class="text-ink/80">中国共产党第一次全国代表大会在上海召开，标志着中国共产党的正式成立，中国革命的面貌从此焕然一新。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件6 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1937">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1937年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">抗日战争全面爆发</h4>
+                                <p class="text-ink/80">七七事变后，中国进入全面抗战阶段，国共两党第二次合作，建立抗日民族统一战线，经过八年浴血奋战，最终取得胜利。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件7 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1945">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1945年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">抗日战争胜利</h4>
+                                <p class="text-ink/80">日本宣布无条件投降，中国人民取得了近代以来反抗外敌入侵的第一次完全胜利，为世界反法西斯战争作出重要贡献。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 近代史事件8 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-modern/20" data-period="modern" data-year="1949">
+                        <div class="flex items-start gap-4">
+                            <div class="text-modern font-bold whitespace-nowrap mt-1">1949年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">中华人民共和国成立</h4>
+                                <p class="text-ink/80">毛泽东在天安门城楼上宣告中华人民共和国成立，结束了帝国主义、封建主义和官僚资本主义的统治，中国人民从此站起来了。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 现代史 -->
+            <section class="mb-16 scroll-reveal" data-period="contemporary">
+                <h3 class="font-calligraphy text-2xl text-contemporary mb-6 pl-2 border-l-4 border-contemporary">
+                    现代史 (1949年至今)
+                </h3>
+                <div class="timeline-line bg-contemporary/30 mb-8 relative">
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[15%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-contemporary border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[40%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-contemporary border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[65%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-contemporary border-4 border-rice"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 left-[90%]">
+                        <div class="timeline-dot w-6 h-6 rounded-full bg-contemporary border-4 border-rice"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 现代史事件1 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-contemporary/20" data-period="contemporary" data-year="1956">
+                        <div class="flex items-start gap-4">
+                            <div class="text-contemporary font-bold whitespace-nowrap mt-1">1956年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">社会主义改造基本完成</h4>
+                                <p class="text-ink/80">中国对农业、手工业和资本主义工商业的社会主义改造基本完成，标志着社会主义制度在中国基本建立。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 现代史事件2 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-contemporary/20" data-period="contemporary" data-year="1978">
+                        <div class="flex items-start gap-4">
+                            <div class="text-contemporary font-bold whitespace-nowrap mt-1">1978年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">改革开放</h4>
+                                <p class="text-ink/80">党的十一届三中全会召开，作出实行改革开放的历史性决策，中国开始从计划经济向市场经济转型，经济快速发展。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 现代史事件3 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-contemporary/20" data-period="contemporary" data-year="1997">
+                        <div class="flex items-start gap-4">
+                            <div class="text-contemporary font-bold whitespace-nowrap mt-1">1997年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">香港回归</h4>
+                                <p class="text-ink/80">中华人民共和国对香港恢复行使主权，设立香港特别行政区，洗雪了百年国耻，推进了祖国统一大业。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 现代史事件4 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-contemporary/20" data-period="contemporary" data-year="2001">
+                        <div class="flex items-start gap-4">
+                            <div class="text-contemporary font-bold whitespace-nowrap mt-1">2001年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">中国加入WTO</h4>
+                                <p class="text-ink/80">中国正式加入世界贸易组织，标志着中国对外开放进入新的阶段，加速了中国经济与世界经济的融合。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 现代史事件5 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-contemporary/20" data-period="contemporary" data-year="2008">
+                        <div class="flex items-start gap-4">
+                            <div class="text-contemporary font-bold whitespace-nowrap mt-1">2008年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">北京奥运会</h4>
+                                <p class="text-ink/80">第29届夏季奥林匹克运动会在北京举行，这是中国首次举办奥运会，展示了中国改革开放的成就和国家实力。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 现代史事件6 -->
+                    <div class="event-card bg-rice/80 p-5 rounded-lg shadow-md border border-contemporary/20" data-period="contemporary" data-year="2021">
+                        <div class="flex items-start gap-4">
+                            <div class="text-contemporary font-bold whitespace-nowrap mt-1">2021年</div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-2">脱贫攻坚战全面胜利</h4>
+                                <p class="text-ink/80">中国宣布脱贫攻坚战取得全面胜利，现行标准下9899万农村贫困人口全部脱贫，历史性地解决了绝对贫困问题。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="text-center py-8 border-t border-ink/20 mt-12">
+            <p class="text-ink/70">华夏历史时间线 © 2025</p>
+            <p class="text-ink/50 text-sm mt-2">探索上下五千年文明，传承华夏文化精髓</p>
+        </footer>
+        
+        <!-- 回到顶部按钮 -->
+        <button id="back-to-top" class="fixed bottom-8 right-8 bg-ink/80 text-rice p-3 rounded-full shadow-lg opacity-0 invisible transition-all duration-300">
+            <i class="fa fa-arrow-up"></i>
+        </button>
+    </div>
+    
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 筛选按钮
+            const periodFilters = document.querySelectorAll('.period-filter');
+            const eventCards = document.querySelectorAll('.event-card');
+            const periodSections = document.querySelectorAll('section[data-period]');
+            const periodTitle = document.getElementById('period-title');
+            
+            // 初始化筛选按钮样式
+            updateFilterStyles('all');
+            
+            // 时期筛选功能
+            periodFilters.forEach(button => {
+                button.addEventListener('click', function() {
+                    const period = this.getAttribute('data-period');
+                    
+                    // 更新筛选按钮样式
+                    updateFilterStyles(period);
+                    
+                    // 更新标题
+                    updatePeriodTitle(period);
+                    
+                    // 筛选事件卡片
+                    eventCards.forEach(card => {
+                        if (period === 'all' || card.getAttribute('data-period') === period) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    
+                    // 筛选时期区块
+                    periodSections.forEach(section => {
+                        if (period === 'all' || section.getAttribute('data-period') === period) {
+                            section.style.display = 'block';
+                            // 重新触发动画
+                            setTimeout(() => {
+                                section.classList.add('active');
+                            }, 10);
+                        } else {
+                            section.style.display = 'none';
+                            section.classList.remove('active');
+                        }
+                    });
+                    
+                    // 关闭移动菜单（如果打开）
+                    document.getElementById('mobile-menu').classList.add('translate-x-full');
+                });
+            });
+            
+            // 搜索功能
+            const searchInputs = [
+                document.getElementById('search-input'),
+                document.getElementById('mobile-search-input')
+            ];
+            
+            searchInputs.forEach(input => {
+                if (input) {
+                    input.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase().trim();
+                        
+                        eventCards.forEach(card => {
+                            const title = card.querySelector('h4').textContent.toLowerCase();
+                            const description = card.querySelector('p').textContent.toLowerCase();
+                            const year = card.getAttribute('data-year');
+                            
+                            const matchesSearch = searchTerm === '' || 
+                                                title.includes(searchTerm) || 
+                                                description.includes(searchTerm) ||
+                                                year.includes(searchTerm);
+                            
+                            const period = document.querySelector('.period-filter.active').getAttribute('data-period');
+                            const matchesPeriod = period === 'all' || card.getAttribute('data-period') === period;
+                            
+                            if (matchesSearch && matchesPeriod) {
+                                card.style.display = 'block';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                    });
+                }
+            });
+            
+            // 时间线滑块导航
+            const timelineSlider = document.getElementById('timeline-slider');
+            timelineSlider.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                let period;
+                
+                if (value < 25) {
+                    period = 'ancient';
+                } else if (value < 50) {
+                    period = 'medieval';
+                } else if (value < 75) {
+                    period = 'modern';
+                } else {
+                    period = 'contemporary';
+                }
+                
+                // 触发对应时期的筛选
+                document.querySelector(`.period-filter[data-period="${period}"]`).click();
+                
+                // 滚动到对应时期
+                const section = document.querySelector(`section[data-period="${period}"]`);
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+            
+            // 滚动显示动画
+            const scrollRevealElements = document.querySelectorAll('.scroll-reveal');
+            
+            function checkScroll() {
+                scrollRevealElements.forEach(element => {
+                    const elementTop = element.getBoundingClientRect().top;
+                    const elementVisible = 150;
+                    
+                    if (elementTop < window.innerHeight - elementVisible) {
+                        element.classList.add('active');
+                    }
+                });
+                
+                // 控制回到顶部按钮显示
+                const backToTopButton = document.getElementById('back-to-top');
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.remove('opacity-0', 'invisible');
+                    backToTopButton.classList.add('opacity-100', 'visible');
+                } else {
+                    backToTopButton.classList.add('opacity-0', 'invisible');
+                    backToTopButton.classList.remove('opacity-100', 'visible');
+                }
+            }
+            
+            // 初始检查
+            checkScroll();
+            
+            // 滚动时检查
+            window.addEventListener('scroll', checkScroll);
+            
+            // 回到顶部功能
+            document.getElementById('back-to-top').addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // 移动端菜单
+            document.getElementById('menu-toggle').addEventListener('click', function() {
+                document.getElementById('mobile-menu').classList.remove('translate-x-full');
+            });
+            
+            document.getElementById('close-menu').addEventListener('click', function() {
+                document.getElementById('mobile-menu').classList.add('translate-x-full');
+            });
+            
+            // 辅助函数：更新筛选按钮样式
+            function updateFilterStyles(activePeriod) {
+                periodFilters.forEach(button => {
+                    if (button.getAttribute('data-period') === activePeriod) {
+                        button.classList.add('active', 'bg-' + activePeriod, 'text-rice');
+                        button.classList.remove('bg-ink/10', 'text-ink');
+                    } else {
+                        button.classList.remove('active', 'bg-ancient', 'bg-medieval', 'bg-modern', 'bg-contemporary', 'text-rice');
+                        button.classList.add('bg-ink/10', 'text-ink');
+                    }
+                });
+            }
+            
+            // 辅助函数：更新时期标题
+            function updatePeriodTitle(period) {
+                const titles = {
+                    'all': '全部历史时期',
+                    'ancient': '古代史 (约公元前2070年-公元581年)',
+                    'medieval': '中古史 (581年-1840年)',
+                    'modern': '近代史 (1840年-1949年)',
+                    'contemporary': '现代史 (1949年至今)'
+                };
+                
+                const colors = {
+                    'all': 'text-ink',
+                    'ancient': 'text-ancient',
+                    'medieval': 'text-medieval',
+                    'modern': 'text-modern',
+                    'contemporary': 'text-contemporary'
+                };
+                
+                periodTitle.textContent = titles[period];
+                periodTitle.className = `font-calligraphy text-[clamp(1.8rem,3vw,2.5rem)] ${colors[period]}`;
+            }
+        });
+    </script>
+
+
+</body></html>
