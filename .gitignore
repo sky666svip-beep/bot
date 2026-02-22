@@ -1,23 +1,30 @@
-﻿model_cache_*/
+﻿# ===================== 通用 Python 忽略规则 =====================
+# 忽略所有位置的 __pycache__ 目录（核心：一行覆盖所有）
+__pycache__/
+# 忽略 Python 编译文件
+*.py[cod]
+*$py.class
+# ===================== 项目目录忽略 =====================
+# 缓存/实例目录
+model_cache_*/
 instance/
+# IDE/编辑器配置
 .idea/
-data/
-data/app.db
 .vscode/
+# 自定义缓存/配置
 .agent/
-ml/data
-app/services/__pycache__
-app/__pycache__
-app/api/__pycache__
-.lingma
-.gitignore
-# 部署相关
+.lingma/
+# 数据目录（任意位置的 data 文件夹）
+**/data/
+# 日志目录
+logs/
+# ===================== 部署相关 =====================
 cloudflared.exe
 config.yml
 start_*.bat
 register_autostart.bat
 stop_all.bat
-logs/
+# 配置文件/敏感信息
 *.json
 .env
 # 1. 查看本地修改状态git status
