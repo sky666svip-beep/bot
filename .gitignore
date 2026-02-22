@@ -2,6 +2,7 @@
 instance/
 .idea/
 data/
+data/app.db
 .vscode/
 .agent/
 ml/data
@@ -9,7 +10,7 @@ app/services/__pycache__
 app/__pycache__
 app/api/__pycache__
 .lingma
-
+.gitignore
 # 部署相关
 cloudflared.exe
 config.yml
