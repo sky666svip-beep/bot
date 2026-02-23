@@ -124,12 +124,14 @@ h1#gameTitle:hover {
 
 input[type=range] {
     -webkit-appearance: none;
+    appearance: none;
     width: 150px;
     background: transparent;
 }
 
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     height: 20px;
     width: 20px;
     border-radius: 50%;
@@ -307,3 +309,418 @@ input[type=range]::-webkit-slider-runnable-track {
     justify-content: center;
     gap: var(--spacing-md);
 }
+
+/* ==================== Mode Selector ==================== */
+/* ==================== Mode Selector (Claymorphism) ==================== */
+.card-bg-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.mode-selector-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 80vh;
+    gap: 40px;
+    position: relative;
+}
+
+/* Header container for back button */
+.header-container {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: flex-start;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.back-btn {
+    font-size: 1rem !important;
+    padding: 8px 16px !important;
+    margin-top: 20px;
+}
+
+/* ==================== Word Search Dictionary ==================== */
+.search-container {
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    z-index: 50;
+    margin-top: 0; /* 移除原有的margin-top */
+}
+
+#wordSearchInput {
+    width: 100%;
+    padding: 15px 25px;
+    font-size: 1.2rem;
+    border: 3px solid #fff;
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05), 0 5px 15px rgba(255,183,178,0.2);
+    outline: none;
+    transition: all 0.3s ease;
+    text-align: center;
+    color: var(--color-text);
+}
+#wordSearchInput:focus {
+    background: #fff;
+    border-color: var(--color-primary);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.02), 0 8px 25px rgba(255,183,178,0.4);
+}
+
+.search-results {
+    position: absolute;
+    top: calc(100% + 15px);
+    left: 5%;
+    width: 90%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    border: 2px solid #fff;
+}
+
+.search-result-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: background 0.2s;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+.search-result-item:last-child {
+    border-bottom: none;
+}
+.search-result-item:hover {
+    background: rgba(255, 183, 178, 0.15);
+}
+
+.sr-word {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--color-primary);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sr-phonetic {
+    font-size: 0.9rem;
+    color: #888;
+    font-weight: normal;
+}
+.sr-def {
+    font-size: 1rem;
+    color: var(--color-text);
+}
+
+.mode-selector-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    justify-content: center;
+    max-width: 1200px;
+    margin: 20px auto;
+}
+
+.mode-card {
+    background: #fff; /* Fallback */
+    background-size: cover;
+    background-position: center;
+    border-radius: 30px;
+    width: 320px;
+    aspect-ratio: 4/3;
+    cursor: pointer;
+    box-shadow: 
+        inset 0 4px 10px rgba(255, 255, 255, 0.5),
+        inset 0 -4px 10px rgba(0, 0, 0, 0.1),
+        0 10px 20px rgba(0, 0, 0, 0.15),
+        0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 4px solid #fff;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Push content to bottom */
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+    pointer-events: none;
+    border-bottom-left-radius: 26px; /* slightly less than outer radius */
+    border-bottom-right-radius: 26px;
+    z-index: 5;
+}
+
+.mode-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 
+        inset 0 4px 10px rgba(255, 255, 255, 0.6),
+        inset 0 -4px 10px rgba(0, 0, 0, 0.05),
+        0 15px 30px rgba(0, 0, 0, 0.2),
+        0 8px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-primary);
+}
+
+.mode-card:active {
+    transform: scale(0.98);
+    box-shadow: 
+        inset 0 6px 15px rgba(0, 0, 0, 0.1),
+        0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.card-content {
+    position: relative;
+    z-index: 10;
+    padding: var(--spacing-md);
+    text-align: center;
+}
+
+.card-content h3 {
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.card-content p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    margin: 0;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* ==================== Game Sections ==================== */
+.game-section {
+    animation: fadeIn 0.5s ease;
+    width: 100%;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 1rem !important;
+    padding: 8px 16px !important;
+}
+
+/* ==================== Spelling Practice ==================== */
+.spelling-content {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+    background: rgba(255,255,255,0.5);
+    border-radius: var(--border-radius-lg);
+}
+
+.spelling-prompt {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.spelling-input {
+    width: 100%;
+    font-size: 1.8rem;
+    padding: 15px 20px;
+    border: 3px solid var(--color-secondary);
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    outline: none;
+    transition: all 0.3s;
+    background: white;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.spelling-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 15px rgba(255, 183, 178, 0.4);
+}
+
+.spelling-input.correct {
+    border-color: #4CAF50;
+    background: #E8F5E9;
+}
+
+.spelling-input.incorrect {
+    border-color: #F44336;
+    background: #FFEBEE;
+}
+
+.spelling-actions {
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+.spelling-feedback, .quiz-feedback {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    min-height: 30px;
+    text-align: center;
+}
+
+/* ==================== Quick Quiz ==================== */
+.quiz-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+}
+
+.quiz-prompt {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: var(--color-purple);
+    margin-bottom: var(--spacing-lg);
+    background: white;
+    padding: 30px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+@media (max-width: 600px) {
+    .quiz-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+.quiz-option {
+    background: white;
+    border: 3px solid var(--color-info);
+    border-radius: var(--border-radius-md);
+    padding: 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.quiz-option:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(181, 234, 215, 0.4);
+    background: var(--color-info);
+}
+
+.quiz-option.correct {
+    background: #4CAF50 !important;
+    border-color: #4CAF50 !important;
+    color: white !important;
+}
+
+.quiz-option.incorrect {
+    background: #F44336 !important;
+    border-color: #F44336 !important;
+    color: white !important;
+}
+
+/* ==================== Common Components ==================== */
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    max-width: 600px;
+    margin: 0 auto 30px auto;
+}
+
+.progress-bar {
+    flex-grow: 1;
+    height: 12px;
+    background: #eee;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-purple));
+    width: 0%;
+    transition: width 0.4s ease;
+}
+
+#spellingCounter, #quizCounter {
+    font-weight: bold;
+    color: var(--color-text);
+    min-width: 50px;
+}
+
+/* Error List in Modal */
+.mistake-list-container {
+    margin-top: 20px;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 15px;
+    border-radius: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--color-secondary);
+}
+
+.mistake-list-container h3 {
+    margin-top: 0;
+    color: #F44336;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #ffcdd2;
+    padding-bottom: 5px;
+}
+
+#mistakeList {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: demical;
+}
+
+#mistakeList li {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.mistake-word {
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.mistake-def {
+    color: #666;
+    margin-left: 10px;
+}
+

@@ -6,44 +6,131 @@
     <title>单词消消乐</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/word_match.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.0">
+    
 </head>
 <body>
-    <div class="container game-container">
+    <div id="sakura-container"></div>
+    <!-- Mode Selector Cards -->
+    <div id="modeSelector" class="mode-selector-wrapper">
+        <div class="header-container">
+            <a href="/" class="btn-secondary back-btn" style="text-decoration: none;">返回首页</a>
+        </div>
+        
+        <!-- Word Search Dictionary -->
+        <div class="search-container">
+            <input type="text" id="wordSearchInput" placeholder="🔍 输入单词或释义..." autocomplete="off">
+            <div id="wordSearchResults" class="search-results"></div>
+        </div>
+
+        <div class="mode-selector-container">
+            <div class="mode-card" data-mode="wordMatch">
+                <img src="{{ url_for('static', filename='img/bear.png') }}" alt="单词消消乐" class="card-bg-img">
+                <div class="card-content">
+                    <h3>单词消消乐</h3>
+                    <p>连连看，记忆大挑战</p>
+                </div>
+            </div>
+            <div class="mode-card" data-mode="spelling">
+                <img src="{{ url_for('static', filename='img/cat.png') }}" alt="拼写练习" class="card-bg-img">
+                <div class="card-content">
+                    <h3>拼写练习</h3>
+                    <p>根据中文提示，拼写正确英文单词</p>
+                </div>
+            </div>
+            <div class="mode-card" data-mode="quiz">
+                <img src="{{ url_for('static', filename='img/bunny.png') }}" alt="快速测验" class="card-bg-img">
+                <div class="card-content">
+                    <h3>快速测验</h3>
+                    <p>中英互译选择题，测试反应力</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container game-container" id="mainGameContainer" style="display: none;">
         <!-- 1. Editable Title -->
         <h1 id="gameTitle" contenteditable="true">单词消消乐</h1>
+        <button id="backToMenuBtn" class="btn-secondary back-btn">返回菜单</button>
         
-        <!-- 2. Menu Bar -->
-        <div class="menu-bar">
-            <div class="slider-container">
-                <label for="pairCount">单词数量: <span id="pairCountValue">10</span>对</label>
-                <input type="range" id="pairCount" min="5" max="50" value="10">
+        <!-- ==================== Word Match Section ==================== -->
+        <div id="wordMatchSection" class="game-section">
+            <div class="menu-bar">
+                <div class="slider-container">
+                    <label for="pairCount">单词数量: <span id="pairCountValue">10</span>对</label>
+                    <input type="range" id="pairCount" min="5" max="50" value="10">
+                </div>
+                <button id="startBtn" class="btn-primary">开始游戏</button>
             </div>
-            <button id="startBtn" class="btn-primary">开始游戏</button>
+
+            <div class="timer-display">
+                耗时：<span id="timerSeconds">0.0</span> 秒
+            </div>
+
+            <div id="wordPanel" class="word-panel">
+                <!-- Blocks will be injected here by JS -->
+            </div>
         </div>
 
-        <!-- 3. Timer -->
-        <div class="timer-display">
-            耗时：<span id="timerSeconds">0.0</span> 秒
+        <!-- ==================== Spelling Section ==================== -->
+        <div id="spellingSection" class="game-section" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-bar"><div id="spellingProgress" class="progress-fill"></div></div>
+                <span id="spellingCounter">0/15</span>
+            </div>
+            
+            <div class="spelling-content">
+                <div id="spellingPrompt" class="spelling-prompt">加载中...</div>
+                <input type="text" id="spellingInput" class="spelling-input" placeholder="输入英文单词..." autocomplete="off">
+                <div class="spelling-actions">
+                    <button id="checkSpellingBtn" class="btn-primary">检查并继续</button>
+                </div>
+                <div id="spellingFeedback" class="spelling-feedback"></div>
+            </div>
         </div>
 
-        <!-- 4. Word Panel -->
-        <div id="wordPanel" class="word-panel">
-            <!-- Blocks will be injected here by JS -->
+        <!-- ==================== Quiz Section ==================== -->
+        <div id="quizSection" class="game-section" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-bar"><div id="quizProgress" class="progress-fill"></div></div>
+                <span id="quizCounter">0/15</span>
+            </div>
+            
+            <div class="quiz-content">
+                <div class="timer-display">
+                    耗时：<span id="quizTimerSeconds">0.0</span> 秒
+                </div>
+                <div id="quizPrompt" class="quiz-prompt">加载中...</div>
+                <div id="quizOptions" class="quiz-options">
+                    <!-- Options injected by JS -->
+                </div>
+                <div id="quizFeedback" class="quiz-feedback"></div>
+            </div>
         </div>
     </div>
 
     <!-- Game Over Modal -->
     <div id="gameOverModal" class="modal">
         <div class="modal-content">
-            <h2>🎉 挑战成功！</h2>
-            <p>本次耗时：<span id="finalTime"></span> 秒</p>
+            <h2 id="modalTitle">🎉 挑战成功！</h2>
+            <div id="modalStats" class="modal-stats">
+                <p>本次耗时：<span id="finalTime"></span> 秒</p>
+            </div>
+            
+            <!-- Error List Container -->
+            <div id="mistakeListContainer" class="mistake-list-container" style="display: none;">
+                <h3>错题复习</h3>
+                <ul id="mistakeList"></ul>
+            </div>
+
             <div class="modal-actions">
-                <button id="continueBtn" class="btn-primary">继续挑战</button>
-                <button id="restartBtn" class="btn-secondary">重新开始</button>
+                <button id="continueBtn" class="btn-primary">再来一次</button>
+                <button id="restartBtn" class="btn-secondary">返回菜单</button>
             </div>
         </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/word_match.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
 </body>
 </html>

@@ -40,13 +40,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
     continueBtn.addEventListener('click', () => {
         modal.style.display = 'none';
-        continueGame();
+        if (currentMode === "wordMatch") {
+            continueGame();
+        } else if (currentMode === "spelling") {
+            startSpellingGame(); // Spelling just restarts round of 15
+        } else if (currentMode === "quiz") {
+            startQuizGame(); // Quiz just restarts round of 15
+        }
     });
 
     restartBtn.addEventListener('click', () => {
         modal.style.display = 'none';
-        startGame();
+        if (currentMode === "wordMatch") {
+            startGame();
+        } else if (currentMode === "spelling") {
+            startSpellingGame();
+        } else if (currentMode === "quiz") {
+            startQuizGame();
+        }
     });
+
+    // ==========================================
+    // Shared Logic for New Modes
+    // ==========================================
+    const modeSelector = document.getElementById("modeSelector");
+    const mainGameContainer = document.getElementById("mainGameContainer");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+    
+    const wordMatchSection = document.getElementById("wordMatchSection");
+    const spellingSection = document.getElementById("spellingSection");
+    const quizSection = document.getElementById("quizSection");
+
+    const modalTitle = document.getElementById("modalTitle");
+    const modalStats = document.getElementById("modalStats");
+    const mistakeListContainer = document.getElementById("mistakeListContainer");
+    const mistakeList = document.getElementById("mistakeList");
+
+    let currentMode = "wordMatch";
+    let mistakes = [];
+
+    // Mode Selection
+    document.querySelectorAll(".mode-card").forEach(card => {
+        card.addEventListener("click", () => {
+            currentMode = card.dataset.mode;
+            modeSelector.style.display = "none";
+            mainGameContainer.style.display = "block";
+            
+            // Hide all sections
+            wordMatchSection.style.display = "none";
+            spellingSection.style.display = "none";
+            quizSection.style.display = "none";
+
+            // Show selected section
+            if (currentMode === "wordMatch") {
+                wordMatchSection.style.display = "block";
+                document.getElementById("gameTitle").innerText = "单词消消乐";
+            } else if (currentMode === "spelling") {
+                spellingSection.style.display = "block";
+                document.getElementById("gameTitle").innerText = "拼写练习";
+                startSpellingGame();
+            } else if (currentMode === "quiz") {
+                quizSection.style.display = "block";
+                document.getElementById("gameTitle").innerText = "快速测验";
+                startQuizGame();
+            }
+        });
+    });
+
+    backToMenuBtn.addEventListener("click", () => {
+        resetGame(); // Stop timer etc from word match
+        stopQuizTimer && stopQuizTimer(); // Stop quiz timer
+        modeSelector.style.display = "flex";
+        mainGameContainer.style.display = "none";
+        modal.style.display = "none";
+    });
+
+    function showGameResult(title, statsHtml, modeMistakes) {
+        modalTitle.innerText = title;
+        modalStats.innerHTML = statsHtml;
+        
+        if (modeMistakes && modeMistakes.length > 0) {
+            mistakeListContainer.style.display = "block";
+            mistakeList.innerHTML = "";
+            modeMistakes.forEach(m => {
+                const li = document.createElement("li");
+                li.innerHTML = `<span class="mistake-word">${m.word}</span> <span class="mistake-def">(${m.def})</span>`;
+                mistakeList.appendChild(li);
+            });
+        } else {
+            mistakeListContainer.style.display = "none";
+        }
+
+        modal.style.display = "flex";
+    }
 
     // === Functions ===
 
@@ -357,8 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (matchedCount === totalPairs) {
             stopTimer();
             setTimeout(() => {
-                 finalTimeSpan.textContent = timerDisplay.textContent;
-                 modal.style.display = 'flex';
+                 const statsHtml = `<p>本次耗时：<strong>${timerDisplay.textContent}</strong> 秒</p>`;
+                 showGameResult("🎉 挑战成功！", statsHtml, null);
             }, 800);
         }
     }
@@ -370,5 +456,356 @@ document.addEventListener('DOMContentLoaded', () => {
             utterance.lang = 'en-US'; 
             window.speechSynthesis.speak(utterance);
         }
+    }
+
+    // ==========================================
+    // Spelling Practice Mode
+    // ==========================================
+    const spellingPrompt = document.getElementById("spellingPrompt");
+    const spellingInput = document.getElementById("spellingInput");
+    const checkSpellingBtn = document.getElementById("checkSpellingBtn");
+    const spellingFeedback = document.getElementById("spellingFeedback");
+    const spellingProgress = document.getElementById("spellingProgress");
+    const spellingCounter = document.getElementById("spellingCounter");
+
+    const SPELLING_ROUND_COUNT = 15;
+    let spellingWords = [];
+    let currentSpellingIndex = 0;
+    let spellingCorrectCount = 0;
+
+    async function startSpellingGame() {
+        spellingPrompt.innerText = "加载中...";
+        spellingInput.value = "";
+        spellingInput.disabled = true;
+        checkSpellingBtn.disabled = true;
+        spellingFeedback.innerText = "";
+        mistakes = [];
+        spellingCorrectCount = 0;
+        currentSpellingIndex = 0;
+
+        spellingWords = await loadWords(SPELLING_ROUND_COUNT);
+        
+        if (spellingWords.length === 0) {
+            alert("词库加载失败，请返回重试。");
+            return;
+        }
+
+        spellingInput.disabled = false;
+        checkSpellingBtn.disabled = false;
+        loadNextSpellingWord();
+    }
+
+    function loadNextSpellingWord() {
+        if (currentSpellingIndex >= spellingWords.length) {
+            endSpellingGame();
+            return;
+        }
+
+        const wordObj = spellingWords[currentSpellingIndex];
+        spellingPrompt.innerText = wordObj.definition;
+        spellingInput.value = "";
+        spellingInput.className = "spelling-input"; // Reset classes
+        spellingFeedback.innerText = "";
+        spellingInput.focus();
+        
+        updateSpellingProgress();
+    }
+
+    function updateSpellingProgress() {
+        spellingCounter.innerText = `${currentSpellingIndex + 1}/${spellingWords.length}`;
+        const percent = ((currentSpellingIndex) / spellingWords.length) * 100;
+        spellingProgress.style.width = `${percent}%`;
+    }
+
+    function checkSpelling() {
+        const wordObj = spellingWords[currentSpellingIndex];
+        const userAnswer = spellingInput.value.trim().toLowerCase();
+        const correctAnswer = wordObj.word.toLowerCase();
+
+        if (userAnswer === "") return;
+
+        spellingInput.disabled = true;
+        checkSpellingBtn.disabled = true;
+
+        if (userAnswer === correctAnswer) {
+            spellingInput.classList.add("correct");
+            spellingFeedback.style.color = "#4CAF50";
+            spellingFeedback.innerText = "正确！";
+            spellingCorrectCount++;
+            speak(wordObj.word);
+        } else {
+            spellingInput.classList.add("incorrect");
+            spellingFeedback.style.color = "#F44336";
+            spellingFeedback.innerHTML = `错误！正确答案是：<strong style="color:var(--color-primary)">${wordObj.word}</strong>`;
+            mistakes.push({ word: wordObj.word, def: wordObj.definition });
+            speak(wordObj.word);
+        }
+
+        setTimeout(() => {
+            currentSpellingIndex++;
+            spellingInput.disabled = false;
+            checkSpellingBtn.disabled = false;
+            loadNextSpellingWord();
+        }, 1500);
+    }
+
+    spellingInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !spellingInput.disabled) {
+            checkSpelling();
+        }
+    });
+
+    checkSpellingBtn.addEventListener("click", () => {
+        if (!checkSpellingBtn.disabled) checkSpelling();
+    });
+
+    function endSpellingGame() {
+        spellingProgress.style.width = "100%";
+        spellingCounter.innerText = `${spellingWords.length}/${spellingWords.length}`;
+        
+        const accuracy = Math.round((spellingCorrectCount / spellingWords.length) * 100);
+        const statsHtml = `
+            <p>答对：<strong>${spellingCorrectCount}</strong> / ${spellingWords.length}</p>
+            <p>准确率：<strong>${accuracy}%</strong></p>
+        `;
+        
+        showGameResult("🎉 拼写练习完成！", statsHtml, mistakes);
+    }
+
+    // ==========================================
+    // Quick Quiz Mode
+    // ==========================================
+    const quizPrompt = document.getElementById("quizPrompt");
+    const quizOptionsContainer = document.getElementById("quizOptions");
+    const quizFeedback = document.getElementById("quizFeedback");
+    const quizProgress = document.getElementById("quizProgress");
+    const quizCounter = document.getElementById("quizCounter");
+    const quizTimerDisplay = document.getElementById("quizTimerSeconds");
+
+    const QUIZ_ROUND_COUNT = 15;
+    let quizBank = []; // Larger pool for options
+    let quizQuestions = []; // Selected questions
+    let currentQuizIndex = 0;
+    let quizCorrectCount = 0;
+    let quizTimerInterval = null;
+    let quizStartTime = 0;
+
+    async function startQuizGame() {
+        quizPrompt.innerText = "加载中...";
+        quizOptionsContainer.innerHTML = "";
+        quizFeedback.innerText = "";
+        mistakes = [];
+        quizCorrectCount = 0;
+        currentQuizIndex = 0;
+
+        // Load a larger bank to get enough incorrect options
+        quizBank = await loadWords(60);
+        
+        if (quizBank.length < 4) {
+             alert("词库加载失败或单词太少，请返回重试。");
+             return;
+        }
+
+        // Pick round count questions
+        quizQuestions = quizBank.slice(0, QUIZ_ROUND_COUNT);
+        
+        startQuizTimer();
+        loadNextQuizQuestion();
+    }
+
+    function startQuizTimer() {
+        quizStartTime = Date.now();
+        clearInterval(quizTimerInterval);
+        quizTimerDisplay.textContent = "0.0";
+        quizTimerInterval = setInterval(() => {
+            const elapsed = (Date.now() - quizStartTime) / 1000;
+            quizTimerDisplay.textContent = elapsed.toFixed(1);
+        }, 100);
+    }
+
+    function stopQuizTimer() {
+        clearInterval(quizTimerInterval);
+    }
+
+    function loadNextQuizQuestion() {
+        if (currentQuizIndex >= quizQuestions.length) {
+            endQuizGame();
+            return;
+        }
+
+        const questionWord = quizQuestions[currentQuizIndex];
+        const isEngToZho = Math.random() > 0.5; // 50% chance
+
+        // Generate options
+        let options = [];
+        let correctOptionText = isEngToZho ? questionWord.definition : questionWord.word;
+        
+        options.push(correctOptionText);
+
+        // Get 3 random wrong options
+        let attempts = 0;
+        while (options.length < 4 && attempts < 100) {
+            attempts++;
+            const randomWord = quizBank[Math.floor(Math.random() * quizBank.length)];
+            if (randomWord.id === questionWord.id) continue;
+            
+            const wrongText = isEngToZho ? randomWord.definition : randomWord.word;
+            if (!options.includes(wrongText)) {
+                options.push(wrongText);
+            }
+        }
+
+        // Shuffle options
+        options.sort(() => Math.random() - 0.5);
+
+        // Render Question
+        quizPrompt.innerText = isEngToZho ? questionWord.word : questionWord.definition;
+        
+        // Always speak english part if we are displaying it, or wait for user to click?
+        if (isEngToZho) {
+            speak(questionWord.word);
+        }
+
+        quizOptionsContainer.innerHTML = "";
+        quizFeedback.innerText = "";
+        
+        options.forEach(optText => {
+            const btn = document.createElement("div");
+            btn.className = "quiz-option";
+            btn.innerText = optText;
+            btn.onclick = () => handleQuizClick(btn, optText, correctOptionText, questionWord);
+            quizOptionsContainer.appendChild(btn);
+        });
+
+        updateQuizProgress();
+    }
+
+    function updateQuizProgress() {
+        quizCounter.innerText = `${currentQuizIndex + 1}/${quizQuestions.length}`;
+        const percent = ((currentQuizIndex) / quizQuestions.length) * 100;
+        quizProgress.style.width = `${percent}%`;
+    }
+
+    function handleQuizClick(clickedBtn, selectedText, correctText, questionWord) {
+        // Disable all buttons to prevent double clicking
+        const allBtns = quizOptionsContainer.querySelectorAll(".quiz-option");
+        allBtns.forEach(btn => btn.style.pointerEvents = "none");
+
+        if (selectedText === correctText) {
+            clickedBtn.classList.add("correct");
+            quizFeedback.style.color = "#4CAF50";
+            quizFeedback.innerText = "正确！";
+            quizCorrectCount++;
+        } else {
+            clickedBtn.classList.add("incorrect");
+            // Find and highlight correct answer
+            allBtns.forEach(btn => {
+                if (btn.innerText === correctText) {
+                    btn.classList.add("correct");
+                }
+            });
+            quizFeedback.style.color = "#F44336";
+            quizFeedback.innerText = "错误！";
+            mistakes.push({ word: questionWord.word, def: questionWord.definition });
+        }
+        
+        speak(questionWord.word);
+
+        setTimeout(() => {
+            currentQuizIndex++;
+            loadNextQuizQuestion();
+        }, 1200);
+    }
+
+    function endQuizGame() {
+        stopQuizTimer();
+        quizProgress.style.width = "100%";
+        quizCounter.innerText = `${quizQuestions.length}/${quizQuestions.length}`;
+        
+        const accuracy = Math.round((quizCorrectCount / quizQuestions.length) * 100);
+        const statsHtml = `
+            <p>本次耗时：<strong>${quizTimerDisplay.textContent}</strong> 秒</p>
+            <p>答对：<strong>${quizCorrectCount}</strong> / ${quizQuestions.length}</p>
+            <p>准确率：<strong>${accuracy}%</strong></p>
+        `;
+        
+        showGameResult("🎉 快速测验完成！", statsHtml, mistakes);
+    }
+
+    // ==========================================
+    // Word Search Dictionary (Fuzzy Search)
+    // ==========================================
+    const searchInput = document.getElementById("wordSearchInput");
+    const searchResults = document.getElementById("wordSearchResults");
+    let searchTimeout = null;
+
+    if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+            const val = e.target.value.trim();
+            clearTimeout(searchTimeout);
+            
+            if (!val) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            // Show loading state implicitly by waiting
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/words/search?keyword=${encodeURIComponent(val)}`);
+                    const data = await res.json();
+                    
+                    if (data.success && data.data.length > 0) {
+                        renderSearchResults(data.data);
+                    } else {
+                        searchResults.innerHTML = '<div style="padding: 15px; text-align: center; color: #888; font-weight: bold;">暂无匹配结果</div>';
+                        searchResults.style.display = 'flex';
+                    }
+                } catch (err) {
+                    console.error("Search API error", err);
+                }
+            }, 300); // 300ms debounce
+        });
+        
+        // Hide when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // Show again when focusing on input if it has results
+        searchInput.addEventListener("focus", () => {
+            if (searchInput.value.trim() && searchResults.innerHTML !== "") {
+                searchResults.style.display = 'flex';
+            }
+        });
+    }
+
+    function renderSearchResults(results) {
+        searchResults.innerHTML = "";
+        results.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "search-result-item";
+            
+            div.innerHTML = `
+                <div class="sr-word">
+                    <span>${item.word}</span>
+                    <span class="sr-phonetic">${item.phonetic || ''}</span>
+                    <span style="font-size:0.8rem; background:var(--color-primary); color:white; padding:2px 8px; border-radius:12px; margin-left:auto; box-shadow:0 2px 4px rgba(0,0,0,0.1);">🔊 朗读</span>
+                </div>
+                <div class="sr-def">${item.definition || '暂无释义'}</div>
+            `;
+            
+            div.addEventListener("click", () => {
+                speak(item.word);
+                // Optional visual feedback on click
+                div.style.background = 'rgba(255, 183, 178, 0.3)';
+                setTimeout(() => div.style.background = '', 200);
+            });
+            
+            searchResults.appendChild(div);
+        });
+        searchResults.style.display = 'flex';
     }
 });

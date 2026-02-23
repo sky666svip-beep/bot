@@ -609,6 +609,28 @@ def get_random_words():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+@api_bp.route('/words/search', methods=['GET'])
+def search_vocabulary():
+    """模糊搜索单词字典"""
+    try:
+        keyword = request.args.get('keyword', '').strip()
+        if not keyword:
+            return jsonify({"success": True, "data": []})
+        
+        words = Vocabulary.query.filter(
+            or_(
+                Vocabulary.word.like(f"%{keyword}%"),
+                Vocabulary.definition.like(f"%{keyword}%")
+            )
+        ).limit(20).all()
+        
+        return jsonify({
+            "success": True,
+            "data": [w.to_dict() for w in words]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
 # === 成语 PK API ===
 @api_bp.route('/idioms/random', methods=['GET'])
 def get_random_idioms():
