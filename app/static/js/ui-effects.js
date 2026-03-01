@@ -47,7 +47,7 @@ const UIEffects = {
         const createSakura = (isInitial = false, parent = container) => {
             const sakura = document.createElement('div');
             sakura.classList.add('sakura');
-            const size = Math.random() * 10 + 5;
+            const size = Math.random() * 10 + 15;
             sakura.style.width = `${size}px`;
             sakura.style.height = `${size}px`;
             sakura.style.left = `${Math.random() * 100}%`;

@@ -7,8 +7,7 @@ import re
 from flask import Blueprint, request, jsonify, render_template
 from docx import Document
 from sqlalchemy import func, or_
-from app.services.handwriting_service import handwriting_service
-from app.services.paddle_service import paddle_service
+
 from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary, Idiom
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
@@ -472,40 +471,7 @@ def search_formulas():
     
     return jsonify({"success": True, "data": results})
 
-@api_bp.route('/handwriting/recognize', methods=['POST'])
-def recognize_handwriting():
-    """手写字符/公式识别接口 (PaddleOCR)"""
-    try:
-        data = request.json
-        image_data = data.get('image')
-        if not image_data:
-            return jsonify({'success': False, 'message': 'No image data provided'})
-            
-        # 1. 尝试使用 PaddleOCR 进行整句/公式识别
-        # PaddleOCR 能够很好地处理多字符、公式和汉字
-        text_result = paddle_service.recognize_formula(image_data)
-        
-        # 如果识别出内容且长度 > 1，直接返回
-        # 如果只识别出1个字符，我们仍然可以返回它，或者结合旧模型的置信度
-        if len(text_result) > 0:
-            return jsonify({
-                'success': True,
-                'data': [{
-                    'char': text_result, 
-                    'confidence': 0.95, # Paddle通常比较稳，暂定0.95
-                    'is_formula': True
-                }]
-            })
-            
-        # 2. 如果 PaddleOCR 什么都没识别出来（例如画得太潦草或只是单个奇怪的符号）
-        # 回退到旧的单字符模型试试运气
-        results = handwriting_service.predict(image_data)
-        if isinstance(results, dict) and "error" in results:
-             return jsonify({'success': False, 'message': results['error']})
-             
-        return jsonify({'success': True, 'data': results})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+
 
 @api_bp.route('/formulas/explain', methods=['POST'])
 def explain_formula():

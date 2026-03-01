@@ -24,6 +24,7 @@ config.yml
 start_*.bat
 register_autostart.bat
 stop_all.bat
+.venv/
 # 配置文件/敏感信息
 *.json
 .env
