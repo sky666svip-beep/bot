@@ -47,12 +47,12 @@ const UIEffects = {
         const createSakura = (isInitial = false, parent = container) => {
             const sakura = document.createElement('div');
             sakura.classList.add('sakura');
-            const size = Math.random() * 15 + 10;
+            const size = Math.random() * 10 + 5;
             sakura.style.width = `${size}px`;
             sakura.style.height = `${size}px`;
             sakura.style.left = `${Math.random() * 100}%`;
             sakura.style.top = isInitial ? `${Math.random() * 100}%` : `-10%`;
-            const duration = Math.random() * 6 + 6;
+            const duration = Math.random() * 5 + 6;
             sakura.style.animationDuration = `${duration}s`;
             sakura.style.opacity = Math.random() * 0.5 + 0.3;
             
@@ -66,12 +66,12 @@ const UIEffects = {
 
         // 优化：使用 DocumentFragment 批量创建初始花瓣，减少重绘
         const fragment = document.createDocumentFragment();
-        for (let i = 0; i < 21; i++) { // 数量减少至 70% (30 -> 21)
+        for (let i = 0; i < 5; i++) { // 数量减少
             createSakura(true, fragment);
         }
         container.appendChild(fragment);
 
-        setInterval(() => createSakura(false), 430); // 频率降低至 70% (300ms -> 430ms)
+        setInterval(() => createSakura(false), 4000); // 频率降低
     }
 };
 

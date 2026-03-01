@@ -16,7 +16,7 @@ client = OpenAI(
     timeout=60.0
 )
 
-def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出 JSON。", model="qwen-plus"):
+def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出 JSON。", model="qwen3.5-flash"):
     """
     """
     try:
@@ -47,12 +47,12 @@ def call_llm(question, options=None, is_doc=False):
     
     要求：
     1. "category" 字段必须从以下列表中选一个最贴切的：{categories}
-    2. 请严格按以下 JSON 格式输出：
+    2. 不要输出 Markdown 标记和除答案和解析以外的内容，请严格按以下 JSON 格式输出：
     {{
       "category": "数学",
       "type": "题目类型",
       "answer": "准确答案内容",
-      "reason": "简略的解题思路和知识点分析"
+      "reason": "简短的解题步骤和思路"
     }}
     """
     return _call_qwen_json(prompt, system_role="解题专家")
@@ -62,8 +62,8 @@ def solve_with_vision(image_path):
     try:
         image_uri = f"file://{os.path.abspath(image_path)}"
         prompt = """
-        你是一个全能解题助手。请识别图片中的题目，并直接给出答案和解析。
-        【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记。
+        你是一个全能解题专家。请识别图片中的题目，并直接给出答案和解析。
+        【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记和除答案和解析以外的内容。
         格式要求：
         {
           "answer": "最终答案",
