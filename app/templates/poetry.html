@@ -10,12 +10,12 @@
     
     <style>
         :root {
-            --ink-black: #2c2c2c;       /* 墨色 */
-            --ink-grey: #595959;        /* 浅墨 */
-            --rice-paper: #f7f4ed;      /* 宣纸白 */
-            --cyan-blue: #4d7a88;       /* 黛蓝/水墨青 */
-            --apricot: #f0e6d6;         /* 浅杏 */
-            --red-seal: #b24646;        /* 印泥红 */
+            --ink-black: #2c2c2c;       
+            --ink-grey: #595959;        
+            --rice-paper: #f7f4ed;      
+            --cyan-blue: #4d7a88;       
+            --apricot: #f0e6d6;         
+            --red-seal: #b24646;        
             --border-color: #dcd6c8;
         }
 
@@ -118,7 +118,7 @@
         .search-box {
             background: transparent;
             border: 2px solid var(--ink-grey);
-            border-radius: 50px; /* 圆润边框 */
+            border-radius: 50px; 
             padding: 5px;
             display: flex;
             align-items: center;
@@ -165,9 +165,9 @@
 
         /* 结果卡片 - 仿宣纸卡片 */
         .result-card {
-            background-color: #fffef9; /* 更亮的米白 */
+            background-color: #fffef9; 
             border: 1px solid rgba(0,0,0,0.08);
-            border-radius: 8px; /* 轻微圆角 */
+            border-radius: 8px; 
             padding: 50px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.03);
             position: relative;
@@ -177,7 +177,7 @@
             outline-offset: -10px;
         }
         
-        /* 竖排文字装饰 (可选) */
+        /* 竖排文字装饰 */
         .vertical-text-deco {
             position: absolute;
             right: 20px;
@@ -218,7 +218,7 @@
             color: var(--ink-black);
         }
 
-        /* 重点字词 Tooltip 样式重写 */
+        /* 重点字词 Tooltip 样式 */
         .poetry-annotation {
             color: var(--red-seal);
             cursor: pointer;
@@ -300,7 +300,6 @@
             font-style: italic;
         }
 
-        /* 隐藏 Bootstrap 默认的 focus */
         .form-control:focus {
             box-shadow: none;
             border-color: transparent;
@@ -380,7 +379,6 @@
         </div>
     </div>
 
-    <!-- 引入 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/poetry.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>

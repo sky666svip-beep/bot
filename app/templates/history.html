@@ -215,7 +215,7 @@ function renderCards(data) {
     }
 
     wrapper.innerHTML = data.map(item => {
-        // 防止解析失败，简单转义
+        // 防止解析失败
         const safeItem = JSON.stringify(item).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
         return `
@@ -274,12 +274,14 @@ ${item.question}
 ---
 
 ### 答案
-<div class="modal-ans-area">
+<div class="modal-ans-area mathjax-process">
 ${item.answer}
 </div>
 
 ### 解析
+<div class="mathjax-process">
 ${item.reason || '暂无答案解析'}
+</div>
 
 <div class="mt-4 small text-muted">
     来源: ${item.source} | 时间: ${item.time}

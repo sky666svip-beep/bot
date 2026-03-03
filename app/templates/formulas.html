@@ -12,7 +12,6 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       rel="stylesheet"
     />
-    <!-- 复用公共样式 -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
@@ -54,7 +53,6 @@
     ></script>
 
     <style>
-      /* 页面特定微调（尽量保持简约，不引入独立CSS文件） */
       .formula-card {
         transition: all 0.3s ease;
         cursor: pointer;
@@ -69,7 +67,6 @@
         min-height: 80px;
         display: flex;
         align-items: center;
-        /* 关键修改：改为 flex-start 并通过 margin: auto 居中，防止溢出时左侧被裁剪 */
         justify-content: flex-start;
         font-size: 1.5em;
         color: #333;
@@ -77,7 +74,6 @@
         overflow-y: hidden;
         padding: 10px;
       }
-      /* 让 MathJax 容器自动居中 */
       .formula-preview > * {
         margin: 0 auto;
       }
@@ -141,7 +137,7 @@
             <h1 class="fw-bold gradient-text">知识库中心</h1>
             <p class="text-muted">查阅常用的公式</p>
 
-            <!-- Gemini 风格搜索框 (复用组件) -->
+            <!-- Gemini 风格搜索框  -->
             <div class="mt-4 mx-auto" style="max-width: 680px">
               {% set search_placeholder = "搜索公式名称，例如 '勾股定理'..." %}
               {% set search_input_id = "searchInput" %} {% set show_ai_button =
@@ -241,7 +237,6 @@
           <div id="contentArea" class="slide-in" style="animation-delay: 0.1s">
             <!-- 动态渲染区域 -->
             <div class="row g-4" id="formulaList">
-              <!-- Javascript Will Populate This -->
             </div>
 
             <!-- 简单的分页加载更多 -->
@@ -281,7 +276,7 @@
             ></button>
           </div>
 
-          <!-- 新增：Tab 导航 -->
+          <!-- Tab 导航 -->
           <div class="px-4 mt-2">
             <ul class="nav nav-tabs" id="detailTabs" role="tablist">
               <li class="nav-item" role="presentation">
@@ -429,7 +424,6 @@
     </div>
 
     <script>
-      // 简单的樱花初始化
       document.addEventListener("DOMContentLoaded", () => {
         if (window.UIEffects && UIEffects.initSakura) {
           UIEffects.initSakura();

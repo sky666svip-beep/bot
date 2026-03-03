@@ -73,7 +73,7 @@ const SearchEngine = {
         sourceBadge.innerText = `${category} (${source})`;
         sourceBadge.className = data.source === '本地匹配' ? 'badge bg-success' : 'badge bg-primary';
 
-        // 3. 【核心修复】错题本按钮逻辑
+        // 3. 错题本按钮逻辑
         // 直接通过 index.html 里定义的 ID 获取按钮，确保能找到
         const starBtn = document.getElementById('toggleMistakeBtn');
         if (starBtn) {

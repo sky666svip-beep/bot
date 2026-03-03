@@ -203,7 +203,31 @@ def generate_poetry_analysis(keyword):
         "annotations": [ {{ "word": "...", "note": "..." }} ] 
     }}
     """
-    return _call_qwen_json(prompt, system_role="古诗词鉴赏专家")
+    
+    try:
+        response = client.chat.completions.create(
+            model="qwen-plus",
+            messages=[
+                {"role": "system", "content": "古诗词鉴赏专家"},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        content = response.choices[0].message.content
+        
+        # 尝试清理可能存在的 markdown 标记
+        clean_content = content.replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_content)
+        
+        if not isinstance(data, dict):
+            logging.error(f"Generate poetry analysis returned non-dict JSON: {type(data)} - {data}")
+            return {}
+            
+        return data
+    except Exception as e:
+        logging.error(f"Generate poetry analysis LLM Call Error: {e}")
+        return {}
 
 def generate_formula_content(formula_context, type="explain"):
     """

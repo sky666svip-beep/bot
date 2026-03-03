@@ -19,7 +19,7 @@
     --transition-base: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 
     /* 五色渐变主题色 */
-    --theme-primary: #6366f1;    /* indigo-500 */
+    --theme-primary: #6366f1;    
     --theme-light: var(--bg-gradient);
     --theme-hover: #4f46e5;
     --theme-border: rgba(224, 231, 255, 0.5);
@@ -28,7 +28,7 @@
 
 /* 英语主题 (偏蓝) */
 body.theme-english {
-    --theme-primary: #0ea5e9;    /* sky-500 */
+    --theme-primary: #0ea5e9;    
     --theme-hover: #0284c7;
     --theme-border: rgba(186, 230, 253, 0.5);
 }

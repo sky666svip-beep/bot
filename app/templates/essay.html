@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/essay.css') }}">
 </head>
 <body>
-<!-- 五色渐变背景 -->
 <div class="bg-blob-container">
     <div class="bg-blob bg-blob-purple"></div>
     <div class="bg-blob bg-blob-blue"></div>
@@ -96,11 +95,9 @@
 <script src="{{ url_for('static', filename='js/essay.js') }}"></script>
 
 <script>
-    // 简单的内联脚本用于处理主题切换类名
     function switchTheme(mode) {
         if (mode === 'english') {
             document.body.classList.add('theme-english');
-            // 调用 essay.js 里的 setMode 逻辑
             if(typeof setMode === 'function') setMode('english');
         } else {
             document.body.classList.remove('theme-english');

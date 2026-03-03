@@ -58,7 +58,7 @@ const Notebook = {
             const data = await res.json();
 
             if (data.success) {
-                // 核心：找到搜题结果卡片上的那个按钮
+                // 找到搜题结果卡片上的那个按钮
                 const btn = document.getElementById(`mis-btn-${id}`);
 
                 if (btn) {
@@ -99,7 +99,7 @@ const Notebook = {
             if(drawer) drawer.hide();
         }
 
-        // 核心修复：直接渲染结果，不再调用 processAndSolve
+        // 直接渲染结果，不再调用 processAndSolve
         if (typeof SearchEngine !== 'undefined') {
             // 构造符合 displayResult 格式的数据
             const displayData = {

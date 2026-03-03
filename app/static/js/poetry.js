@@ -52,7 +52,6 @@ const PoetrySearch = {
         
         if (data.annotations && Array.isArray(data.annotations)) {
             // 简单处理：遍历 annotations，把 contentHtml 里的 word 替换带 tooltip 的 span
-            // 注意：要小心重复替换，这里做个简单版本
             data.annotations.forEach(anno => {
                 const word = anno.word;
                 const note = anno.note;

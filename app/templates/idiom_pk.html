@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>成语 PK</title>
-    <!-- Tailwind CSS CDN (For rapid prototyping with modern utility classes) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
@@ -28,7 +27,7 @@
             <div class="bg-orange-100/60 backdrop-blur-sm rounded-full px-6 py-2 flex items-center shadow-inner border border-orange-200">
                 <span class="text-orange-800 font-bold tracking-widest text-lg">⚔️ 成语 PK ⚔️</span>
             </div>
-            <div class="w-10"></div> <!-- 占位保持居中 -->
+            <div class="w-10"></div>
         </div>
     </nav>
 
@@ -62,7 +61,7 @@
                 </div>
             </div>
 
-            <!-- VS 图标区 (纯装饰) -->
+            <!-- VS 图标区 -->
             <div class="z-10 flex-shrink-0 relative mx-4">
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white/40 blur-xl rounded-full"></div>
                 <div class="vs-text select-none drop-shadow-md text-gray-300">VS</div>
@@ -169,7 +168,6 @@
                 <h2 class="text-2xl font-black text-gray-900 drop-shadow-sm flex items-center gap-2">
                     <i class="fas fa-book-open text-orange-400 text-xl"></i> 成语列表
                 </h2>
-                <!-- 以后作为二级页面入口保留 -->
                 <a href="/idioms_all" class="text-xl font-semibold text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1 cursor-pointer">
                     全部 <i class="fas fa-chevron-right text-xs"></i>
                 </a>
@@ -328,7 +326,7 @@
             // 2. 配置并发音
             currentUtterance = new SpeechSynthesisUtterance(text);
             currentUtterance.lang = 'zh-CN';
-            currentUtterance.rate = 0.9; // 稍微慢一点更清晰
+            currentUtterance.rate = 0.9; // 语速
             
             // 添加动画状态
             btnElement.classList.add('playing');
@@ -466,7 +464,7 @@
             showMessage("判卷中...", "text-blue-500");
 
             try {
-                // 使用 URLSearchParams 构建查询字符串，避免 Jinja2 将 & 转义为 &amp;
+                // URLSearchParams 构建查询字符串
                 const params = new URLSearchParams({word: word, target: GameState.targetPinyin});
                 const res = await fetch('/api/idioms/validate_chain?' + params.toString());
                 const json = await res.json();

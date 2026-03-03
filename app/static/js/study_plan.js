@@ -206,7 +206,7 @@ const Planner = {
         });
     },
 
-    // === 新增功能：智能诊断 ===
+    // === 智能诊断 ===
     async autoDiagnose() {
         const input = document.getElementById('weaknessInput');
         const originalPlaceholder = input.placeholder;
@@ -248,7 +248,7 @@ const Planner = {
         type();
     },
 
-    // === 新增功能：保存为图片 ===
+    // === 保存为图片 ===
     saveAsImage() {
         const element = document.getElementById('planCardExport');
         const btn = event.currentTarget;

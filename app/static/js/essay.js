@@ -2,11 +2,8 @@ let currentMode = 'chinese';
 
 function setMode(mode) {
     currentMode = mode;
-    // 切换时清空结果或保留输入看你需求
     const input = document.getElementById('essayInput');
     input.placeholder = mode === 'chinese' ? "请输入语文作文..." : "Please paste your English essay here...";
-
-    // 切换模式时，清空之前的校验警告（如果有的话）
     input.classList.remove('is-invalid');
 }
 
@@ -35,7 +32,7 @@ document.getElementById('fileInput').addEventListener('change', async function(e
     }
 });
 
-// 2. 提交批改 (新增语言检测逻辑)
+// 2. 提交批改 
 async function submitCorrection() {
     const inputEl = document.getElementById('essayInput');
     const text = inputEl.value.trim();
@@ -45,7 +42,7 @@ async function submitCorrection() {
         return;
     }
 
-    // === 新增：语言匹配度检测 ===
+    // === 语言匹配度检测 ===
     const hasChineseChar = /[\u4e00-\u9fa5]/.test(text);
 
     if (currentMode === 'chinese') {
@@ -91,7 +88,7 @@ async function submitCorrection() {
     }
 }
 
-// 3. 渲染结果 (全新样式适配版)
+// 3. 渲染结果 
 function renderResult(data) {
     const container = document.getElementById('resultContent');
 

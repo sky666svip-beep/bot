@@ -312,8 +312,8 @@ def search_poetry():
 
     # 2. LLM 生成
     gen = generate_poetry_analysis(keyword)
-    if not gen or 'error' in gen:
-        return jsonify({"success": False, "message": "未找到相关诗词"})
+    if not isinstance(gen, dict) or 'error' in gen or not gen.get('title') or not gen.get('content'):
+        return jsonify({"success": False, "message": "未找到相关诗词或解析失败"})
 
     # 3. 入库 (Trust Gen Data)
     if not poetry:

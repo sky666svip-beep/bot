@@ -12,7 +12,6 @@
 	<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 <body>
-	<!-- New Background Blobs -->
 	<div class="bg-blob-container">
 		<div class="bg-blob bg-blob-purple" style="top: -10%; left: -10%;"></div>
 		<div class="bg-blob bg-blob-blue" style="bottom: -10%; right: -10%;"></div>
@@ -38,7 +37,6 @@
 	<div class="container pt-3 pb-5">
 		<div class="row justify-content-center">
 			<div class="col-lg-9 col-md-11">
-				<!-- Header (Moved Outside Card) -->
 				<div class="text-center mb-5 mt-4 space-y-3 slide-in">
 					<h1 class="redesign-header-title"> 智能答题助手 </h1>
 					<p class="redesign-header-subtitle"> 机器学习赋能 · 多模态融合解题引擎 </p>
@@ -49,7 +47,6 @@
 						<button class="btn btn-sm btn-clear-corner position-absolute top-0 end-0 m-2" onclick="document.getElementById('rawText').value=''" title="清空">
 							<i class="fas fa-times"></i>
 						</button>
-						<!-- 文档识别按钮：移动到输入框右下角 -->
 						<input type="file" id="docUpload" accept=".pdf,.docx,.txt" style="display: none;" onchange="SearchEngine.handleDocUpload()">
 						<button class="btn btn-sm btn-doc-corner position-absolute bottom-0 end-0 m-2" onclick="document.getElementById('docUpload').click()" title="文档识别">
 							<i class="fas fa-file-alt me-1"></i> 文档识别 </button>

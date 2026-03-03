@@ -4,7 +4,7 @@
 const FormulaManager = {
     state: {
         category: '',
-        grade: '', // 新增
+        grade: '', 
         keyword: '',
         page: 1,
         perPage: 12,
@@ -64,7 +64,7 @@ const FormulaManager = {
         this.state.hasMore = true;
         // 保持语义搜索状态，不重置 isSemantic
         
-        // 更新 Tab 样式 (注意：只更新分类 Tabs，不影响 Modal 内的 Tabs)
+        // 更新 Tab 样式 
         document.querySelectorAll('#formulaTabs .nav-link').forEach(btn => btn.classList.remove('active'));
         const tabId = cat === '' ? 'tab-all' : 
                       cat === '数学' ? 'tab-math' :
@@ -74,13 +74,12 @@ const FormulaManager = {
         this.loadFormulas(true);
     },
 
-    // 切换学段 (新增)
+    // 切换学段 
     setGrade(g) {
         if (this.state.grade === g) return;
         this.state.grade = g;
         this.state.page = 1;
         this.state.hasMore = true;
-        // 保持语义搜索状态，不重置 isSemantic
 
         // 更新 Chips 样式
         const gradeMap = {'': 'grade-all', '小学': 'grade-primary', '初中': 'grade-junior', '高中': 'grade-high', '大学': 'grade-univ'};
@@ -186,10 +185,9 @@ const FormulaManager = {
         this.loadFormulas(false);
     },
 
-    // 清洗 LaTeX 字符串 (修复双重转义)
+    // 清洗 LaTeX 字符串 
     cleanLatex(str) {
         if (!str) return '';
-        // 将双反斜杠替换为单反斜杠 (注意：JS中 \\\\ 表示两个反斜杠字符)
         return str.replace(/\\\\/g, '\\');
     },
 
@@ -237,10 +235,8 @@ const FormulaManager = {
             if (json.success) {
                 const f = json.data;
                 document.getElementById('detailTitle').innerText = f.name;
-                document.getElementById('detailCategory').innerText = f.category || '通用';
+                document.getElementById('detailCategory').innerText = f.category || '数学';
                 document.getElementById('detailGrade').innerText = f.grade || '通用';
-                
-                // [变更] 原 CODE 位置改为显示 Tags
                 const tagsContainer = document.getElementById('detailCode'); // ID 保持不变，内容变更
                 if (f.tags && f.tags.length > 0) {
                    tagsContainer.innerHTML = f.tags.map(t => 

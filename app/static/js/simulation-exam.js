@@ -21,7 +21,7 @@ const ExamApp = {
         }
     },
     
-    // 1. 调用 API 生成试卷
+    // 1. 生成试卷
     async generateExam() {
         const subject = document.getElementById('subject').value;
         const grade = document.getElementById('grade').value;
@@ -118,11 +118,11 @@ const ExamApp = {
         if (q.type === '单选题' || q.type === '判断题') {
             const opts = q.options || (q.type === '判断题' ? ['A. 正确', 'B. 错误'] : []);
             
-            // 【关键修改】缓存 UI 使用的选项列表，供 selectOption 使用
+            // 缓存 UI 使用的选项列表，供 selectOption 使用
             q.ui_options = opts; 
 
             return opts.map((opt, i) => {
-                // 尝试分离 "A. 内容" 为 Label 和 Content
+                // 分离 "A. 内容" 为 Label 和 Content
                 let label = "";
                 let content = opt;
                 // 匹配 A. 或 A、 或 A (space)
@@ -136,7 +136,6 @@ const ExamApp = {
                     label = String.fromCharCode(65 + i) + "."; // 生成 A. B.
                 }
 
-                // 【关键修改】这里传递索引 i，而不是原始文本 opt
                 return `
                 <div class="card option-card mb-2 p-3 d-flex flex-row align-items-center" onclick="ExamApp.selectOption(${index}, ${i}, this)">
                     ${label ? `<span class="fw-bold me-3 fs-5 text-primary">${label}</span>` : ''}
@@ -219,9 +218,7 @@ const ExamApp = {
                 let cleanMy = myAns.toString().trim().toUpperCase();
 
                 // 针对单选题/判断题，尝试从参考答案中提取 "A", "B" 等前缀
-                // 防止参考答案是 "C. which" 而用户答案被提取成了 "C"，导致 "C" != "C. WHICH"
                 if (q.type === '单选题' || q.type === '判断题') {
-                    // 如果参考答案长得像 "A. xxx" 或 "A xxx"，提取出 A
                     const match = cleanCorrect.match(/^([A-Z])[\.\、\s]/);
                     if (match) {
                         cleanCorrect = match[1];

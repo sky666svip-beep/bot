@@ -1,8 +1,8 @@
 /**
- * UI 增强模块：樱花 + 原版果冻时钟 (无打字机)
+ * UI 增强模块：樱花 + 果冻时钟
  */
 const UIEffects = {
-    // --- 1. 原版果冻时钟逻辑 ---
+    // --- 1. 果冻时钟逻辑 ---
     initClock() {
         const hourEl = document.getElementById('hour');
         const minEl = document.getElementById('minute');
@@ -21,9 +21,8 @@ const UIEffects = {
             const updateUnit = (el, newVal, oldVal) => {
                 if (newVal !== oldVal) {
                     el.innerText = newVal;
-                    // 核心：移除 Class -> 触发重绘 -> 重新添加 Class
                     el.classList.remove('jelly-animate');
-                    void el.offsetWidth; // 触发回流
+                    void el.offsetWidth;
                     el.classList.add('jelly-animate');
                 }
             };
@@ -39,7 +38,7 @@ const UIEffects = {
         setInterval(updateTime, 1000);
     },
 
-    // --- 2. 樱花特效逻辑 (保持不变) ---
+    // --- 2. 樱花特效逻辑  ---
     initSakura() {
         const container = document.getElementById('sakura-container');
         if (!container) return;
@@ -58,20 +57,20 @@ const UIEffects = {
             
             parent.appendChild(sakura);
             
-            // 优化：确保元素自动销毁
+            // 确保元素自动销毁
             setTimeout(() => {
                 if (sakura && sakura.parentNode) sakura.remove();
             }, duration * 1000);
         };
 
-        // 优化：使用 DocumentFragment 批量创建初始花瓣，减少重绘
+        // 使用 DocumentFragment 批量创建初始花瓣，减少重绘
         const fragment = document.createDocumentFragment();
-        for (let i = 0; i < 5; i++) { // 数量减少
+        for (let i = 0; i < 10; i++) { // 初始数量
             createSakura(true, fragment);
         }
         container.appendChild(fragment);
 
-        setInterval(() => createSakura(false), 4000); // 频率降低
+        setInterval(() => createSakura(false), 3000); // 频率降低
     }
 };
 

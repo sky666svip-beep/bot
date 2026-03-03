@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. 初始化 UI 特效 (樱花与时钟)
     if (typeof UIEffects !== 'undefined') {
-        // 如果 initEffects 在脚本里叫 initEffects 而不是 initSakura，请对应修改
         if (UIEffects.initClock) UIEffects.initClock();
         if (UIEffects.initSakura) UIEffects.initSakura();
         else if (typeof initEffects === 'function') initEffects();

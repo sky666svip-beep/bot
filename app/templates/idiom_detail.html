@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>成语详情</title>
-    <!-- Tailwind CSS (CDN for simple demo/dev) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/idiom.css') }}">
@@ -17,7 +16,7 @@
             <i class="fas fa-arrow-left text-xl"></i>
         </button>
         <span class="font-sans font-bold text-amber-800 text-lg tracking-wider">📜 成语详情</span>
-        <div class="w-8"></div> <!-- 右侧占位保持居中 -->
+        <div class="w-8"></div>
     </nav>
 
     <!-- 主体容器 -->
@@ -29,7 +28,7 @@
             <p class="text-gray-500 text-sm tracking-widest">研墨铺纸中...</p>
         </div>
 
-        <!-- 详情内容区 (默认隐藏) -->
+        <!-- 详情内容区  -->
         <div id="detail-content" class="hidden opacity-0 transition-opacity duration-500">
             <!-- ========== 主视觉区 (卷轴卡片) ========== -->
             <div class="scroll-card rounded-lg mb-8">
@@ -87,7 +86,6 @@
     </main>
 
     <script>
-        // 从模板引擎获取 ID，或通过 URL 获取 (当前采用 Jinja 渲染的变量)
         const idiomId = {{ idiom_id|tojson }};
         let currentIdiomWord = '';
 
@@ -141,7 +139,7 @@
             document.getElementById('loading').classList.add('hidden');
             const contentDiv = document.getElementById('detail-content');
             contentDiv.classList.remove('hidden');
-            // 简单的淡入效果
+
             setTimeout(() => {
                 contentDiv.classList.remove('opacity-0');
             }, 50);
@@ -195,7 +193,7 @@
             // 3. 播放（限定于只播放具体的成语四个字）
             const utterance = new SpeechSynthesisUtterance(currentIdiomWord);
             utterance.lang = 'zh-CN';
-            utterance.rate = 0.9; // 稍微慢一点更像朗读
+            utterance.rate = 0.9; // 语速
             
             // 播放结束移除动画
             utterance.onend = () => {
