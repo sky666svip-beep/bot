@@ -327,17 +327,47 @@ const FormulaManager = {
             if (json.success) {
                 let htmlContent = '';
                 
+                const formatMath = (text) => {
+                    if (!text) return '';
+                    let t = String(text).trim();
+                    if (!t.startsWith('$') && !t.startsWith('\\[') && !t.startsWith('\\(') && !t.includes('$')) {
+                        let hasMathFeatures = t.includes('\\') || t.includes('^');
+                        if (hasMathFeatures) {
+                            let chineseCount = (t.match(/[\u4e00-\u9fa5]/g) || []).length;
+                            if (chineseCount <= 2 || chineseCount / t.length < 0.15) {
+                                t = '$$' + t + '$$';
+                            } else {
+                                t = t.replace(/((?:[a-zA-Z0-9_.=+\-*/()]+)?(?:\\[a-zA-Z]+(?:\{[^}]*\})*|[a-zA-Z0-9_]+\^[a-zA-Z0-9_{}.+\-]+)(?:[a-zA-Z0-9_.=+\-*/(){}\\^]*(?:\\[a-zA-Z]+(?:\{[^}]*\})*|[a-zA-Z0-9_]+\^[a-zA-Z0-9_{}.+\-]+))*(?:[a-zA-Z0-9_.=+\-*/()]*)?)/g, (match) => {
+                                    if (/\\[a-zA-Z]|\^/.test(match)) return '$' + match + '$';
+                                    return match;
+                                });
+                            }
+                        }
+                    }
+
+                    const mathBlocks = [];
+                    const mathRegex = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$\n]*?\$)/g;
+                    let processedText = t.replace(mathRegex, (match) => {
+                        mathBlocks.push(match.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                        return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+                    });
+                    
+                    let html = typeof window.marked !== 'undefined' ? marked.parse(processedText, { breaks: true }) : processedText;
+                    
+                    if (html.startsWith('<p>') && html.endsWith('</p>\n')) {
+                        const count = (html.match(/<p>/g) || []).length;
+                        if (count === 1) html = html.substring(3, html.length - 5);
+                    }
+                    return html.replace(/@@MATH_BLOCK_(\d+)@@/g, (m, i) => mathBlocks[i]);
+                };
+                
                 if (type === 'explain') {
                     // 解析模式：Markdown 渲染
-                    if (window.marked) {
-                        htmlContent = marked.parse(json.data);
-                    } else {
-                        htmlContent = json.data; // 降级处理
-                    }
+                    htmlContent = formatMath(json.data);
                 } else if (type === 'example') {
                     // 例题模式：结构化展示
                     const q = json.data;
-                    const optsHtml = (q.options || []).map(o => `<div class="p-2 border rounded mb-2 bg-white">${o}</div>`).join('');
+                    const optsHtml = (q.options || []).map(o => `<div class="p-2 border rounded mb-2 bg-white mathjax-process">${formatMath(o)}</div>`).join('');
                     
                     htmlContent = `
                         <div class="card border-success border-opacity-25 mb-3">
@@ -345,14 +375,16 @@ const FormulaManager = {
                                 <i class="fas fa-file-alt me-2"></i> 生成例题 (已入库)
                             </div>
                             <div class="card-body">
-                                <h6 class="card-title fw-bold mb-3">${q.question}</h6>
+                                <h6 class="card-title fw-bold mb-3 mathjax-process" style="line-height: 1.6;">${formatMath(q.question)}</h6>
                                 <div class="mb-3">${optsHtml}</div>
                                 
-                                <div class="alert alert-light border">
-                                    <strong>✅ 答案：</strong> ${q.answer}
+                                <div class="alert alert-light border mathjax-process">
+                                    <strong class="d-block mb-1">✅ 答案：</strong> 
+                                    <div class="mt-2">${formatMath(q.answer)}</div>
                                 </div>
-                                <div class="small text-muted">
-                                    <strong>💡 解析：</strong> ${q.reason}
+                                <div class="small text-muted mathjax-process">
+                                    <strong class="d-block mb-1">💡 解析：</strong> 
+                                    <div class="text-secondary mt-2" style="font-size: 0.95em;">${formatMath(q.reason)}</div>
                                 </div>
                             </div>
                         </div>

@@ -2,12 +2,11 @@
    1. 基础布局与全局设置 (Base & Layout)
    ========================================= */
 html, body {
-    background-color: transparent !important; /* Allow blobs to show */
+    background-color: transparent !important; 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     min-height: 100vh;
-    position: relative; /* Ensure stacking context */
+    position: relative; 
 }
-/* Fallback background color on the blob container if needed, or rely on a wrapper */
 body::before {
     content: '';
     position: fixed;
@@ -15,11 +14,11 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #f8fafc; /* Slate-50 equivalent */
+    background-color: #f8fafc; 
     z-index: -20;
 }
 :root {
-  /* gradient-soft-blue-purple 蜜瓜青柠清新渐变（暖调清新） */
+  /* 蜜瓜青柠清新渐变（暖调清新） */
   --gradient-soft-blue-purple: linear-gradient(135deg, 
     rgba(255, 252, 245, 0.65) 0%,  /* 淡蜜瓜白 */
     rgba(247, 252, 245, 0.65) 25%, /* 极浅青柠绿 */
@@ -226,7 +225,7 @@ body::before {
 /* Mistake - Amber/Warning */
 .bg-purple-500\/10.text-purple-600 {
     background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
-    color: #9333ea !important; /* 紫色主色 */
+    color: #9333ea !important; 
     box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3) !important;
 }
 
@@ -288,7 +287,7 @@ body::before {
 .sub-func-btn-compact:hover {
     background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(6, 182, 212, 0.08));
     transform: translateX(4px);
-    color: #0d6efd; /* Use primary color or var(--primary) */
+    color: #0d6efd; 
 }
 
 .sub-func-btn-compact:hover i {
@@ -302,7 +301,7 @@ body::before {
     transition: transform 0.15s ease;
 }
 
-/* 移动端适配：防止 hover 问题，如有必要可保留点击 */
+/* 移动端适配：防止 hover 问题 */
 @media (max-width: 768px) {
     .compact-sub-menu {
         left: 0;
@@ -383,13 +382,13 @@ body::before {
 .btn-clear-corner {
     background: rgba(255, 255, 255, 0.4);
     border: 1px solid rgba(191, 219, 254, 0.5);
-    color: #64748b; /* 灰蓝色 */
+    color: #64748b; 
     border-radius: 8px;
     transition: all 0.3s ease;
 }
 .btn-clear-corner:hover {
-    background: rgba(239, 68, 68, 0.1); /* 淡红色背景 */
-    color: #ef4444; /* 红色 */
+    background: rgba(239, 68, 68, 0.1); 
+    color: #ef4444; 
     border-color: rgba(239, 68, 68, 0.3);
 }
 
@@ -488,7 +487,7 @@ body::before {
     #3186ff00 330deg 360deg  
     );
     /* 边框旋转动画 */
-    animation: glow-rotate 10s linear infinite;
+    animation: glow-rotate 13s linear infinite;
 }
 @keyframes glow-rotate {
     0% { --glow-angle: 0deg; }

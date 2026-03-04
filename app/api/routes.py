@@ -7,7 +7,6 @@ import re
 from flask import Blueprint, request, jsonify, render_template
 from docx import Document
 from sqlalchemy import func, or_
-
 from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary, Idiom
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
@@ -470,8 +469,6 @@ def search_formulas():
             results.append(data)
     
     return jsonify({"success": True, "data": results})
-
-
 
 @api_bp.route('/formulas/explain', methods=['POST'])
 def explain_formula():

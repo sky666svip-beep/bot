@@ -11,13 +11,10 @@ class TestConfig(Config):
 
 class AuthTestCase(unittest.TestCase):
     def setUp(self):
-        # 使用测试配置创建应用，此时 db.init_app 会使用内存数据库
         self.app = create_app(config_class=TestConfig)
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
-        
-        # 创建表（在内存数据库中）
         db.create_all()
 
     def tearDown(self):

@@ -1,5 +1,5 @@
 /**
- * UI 增强模块：樱花 + 果冻时钟
+ * UI 模块：樱花 + 果冻时钟
  */
 const UIEffects = {
     // --- 1. 果冻时钟逻辑 ---
@@ -57,24 +57,20 @@ const UIEffects = {
             
             parent.appendChild(sakura);
             
-            // 确保元素自动销毁
             setTimeout(() => {
                 if (sakura && sakura.parentNode) sakura.remove();
             }, duration * 1000);
         };
-
-        // 使用 DocumentFragment 批量创建初始花瓣，减少重绘
         const fragment = document.createDocumentFragment();
-        for (let i = 0; i < 10; i++) { // 初始数量
+        for (let i = 0; i < 8; i++) { // 初始数量
             createSakura(true, fragment);
         }
         container.appendChild(fragment);
 
-        setInterval(() => createSakura(false), 3000); // 频率降低
+        setInterval(() => createSakura(false), 4000); // 频率降低
     }
 };
 
-// --- 初始化入口 ---
 document.addEventListener('DOMContentLoaded', () => {
     UIEffects.initClock();
     UIEffects.initSakura();

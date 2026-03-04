@@ -16,7 +16,7 @@ client = OpenAI(
     timeout=60.0
 )
 
-def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出 JSON。", model="qwen3.5-flash"):
+def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出 JSON。", model="qwen-plus"):
     """
     """
     try:
@@ -259,7 +259,7 @@ def generate_formula_content(formula_context, type="explain"):
         公式内容：{formula_context.get('formula')}
         
         要求：
-        1. 题目要典型，考察公式的核心用法。
+        1. 题目要典型，考察公式的核心用法，不要出选择题。
         2. 必须包含简短的解析步骤。
         3. 输出 JSON 格式用于入库。
         

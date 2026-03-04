@@ -43,25 +43,44 @@ const SearchEngine = {
         // 1. 显示结果区域
         resultArea.style.display = 'block';
 
-        // 2. 使用 marked 解析 Markdown 并注入 HTML
-        // 辅助处理函数：防止 Markdown 吃掉 LaTeX 反斜杠，并自动包裹公式
-        const _preprocessMarkdown = (text) => {
-            // 确保是字符串类型
+        // 2.  Markdown 与 MathJax 混合解析
+        const renderMarkdownWithMath = (text) => {
             if (!text) return "";
-            if (typeof text !== 'string') {
-                text = String(text);
+            let t = String(text).trim();
+            // 启发式判断裸公式
+            if (!t.startsWith('$') && !t.startsWith('\\[') && !t.startsWith('\\(') && !t.includes('$')) {
+                let hasMathFeatures = t.includes('\\') || t.includes('^');
+                if (hasMathFeatures) {
+                    let chineseCount = (t.match(/[\u4e00-\u9fa5]/g) || []).length;
+                    if (chineseCount <= 2 || chineseCount / t.length < 0.15) {
+                        t = '$$' + t + '$$';
+                    } else {
+                        t = t.replace(/((?:[a-zA-Z0-9_.=+\-*/()]+)?(?:\\[a-zA-Z]+(?:\{[^}]*\})*|[a-zA-Z0-9_]+\^[a-zA-Z0-9_{}.+\-]+)(?:[a-zA-Z0-9_.=+\-*/(){}\\^]*(?:\\[a-zA-Z]+(?:\{[^}]*\})*|[a-zA-Z0-9_]+\^[a-zA-Z0-9_{}.+\-]+))*(?:[a-zA-Z0-9_.=+\-*/()]*)?)/g, (match) => {
+                            if (/\\[a-zA-Z]|\^/.test(match)) return '$' + match + '$';
+                            return match;
+                        });
+                    }
+                }
             }
-            let processed = text.replace(/\\/g, "\\\\");
+            const mathBlocks = [];
+            const mathRegex = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$\n]*?\$)/g;
+            let processedText = t.replace(mathRegex, (match) => {
+                mathBlocks.push(match.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            let html = typeof marked !== 'undefined' ? marked.parse(processedText, { breaks: true }) : processedText;
             
-            if (/\\/.test(text) && !/\$/.test(text)) {
-                processed = `$$${processed}$$`;
+            if (html.startsWith('<p>') && html.endsWith('</p>\n')) {
+                const count = (html.match(/<p>/g) || []).length;
+                if (count === 1) html = html.substring(3, html.length - 5);
             }
-            return processed;
+            
+            return html.replace(/@@MATH_BLOCK_(\d+)@@/g, (match, index) => mathBlocks[index]);
         };
 
         if (typeof marked !== 'undefined') {
-            targetAnswer.innerHTML = marked.parse(_preprocessMarkdown(data.answer || "无答案内容"));
-            explanation.innerHTML = marked.parse(_preprocessMarkdown(data.reason || "暂无详细解析"));
+            targetAnswer.innerHTML = renderMarkdownWithMath(data.answer || "无答案内容");
+            explanation.innerHTML = renderMarkdownWithMath(data.reason || "暂无详细解析");
         } else {
             targetAnswer.innerText = data.answer;
             explanation.innerText = data.reason;
