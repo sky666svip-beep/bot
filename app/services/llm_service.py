@@ -5,7 +5,7 @@ from dashscope import MultiModalConversation
 from openai import OpenAI
 
 # 配置 API Key
-DASHSCOPE_API_KEY = "sk-4d7affd10cd14f2897a79263310c5d9e"
+DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
 # dashscope SDK 需要设置 api_key
 import dashscope
 dashscope.api_key = DASHSCOPE_API_KEY
