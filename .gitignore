@@ -8,6 +8,8 @@ __pycache__/
 # 缓存/实例目录
 model_cache_*/
 instance/
+/llama-cuda
+/Qwen3-Reranker-0.6B
 # IDE/编辑器配置
 .idea/
 .vscode/

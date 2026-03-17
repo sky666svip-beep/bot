@@ -5,6 +5,7 @@ import json
 import torch
 import logging
 import re
+import math
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 
@@ -19,6 +20,19 @@ class NLPService:
     _corpus_tensor = None
     # corpus_data: 存放题目元数据 (ID, 答案等)，驻留在内存
     _corpus_data = []
+    
+    # --- BM25+ 核心数据结构 ---
+    _BM25_K1 = 1.5
+    _BM25_B = 0.75
+    _BM25_DELTA = 1.0
+    _bm25_idf = {}         # key: word, value: idf_score
+    _bm25_inverted = {}    # key: word, value: {doc_idx: freq}
+    _bm25_doc_lens = []    # 文档长度列表，索引对齐 _corpus_data
+    _bm25_avgdl = 0.0      # 平均文档长度
+    _std_q_map = {}         # std_q -> corpus_data 索引，O(1) 精确匹配
+    # --- 召回与融合超参数（适配 ≤2万小语料） ---
+    _RRF_K = 20             # RRF 融合参数，小语料用小值拉开排名差距
+    _RECALL_TOP_K = 10      # 每路召回数量，2万词库取 Top-10 已充分覆盖
     MODEL_PATH = os.path.join(os.getcwd(), 'model_cache_qwen')
     MODEL_NAME = 'Qwen/Qwen3-Embedding-0.6B'
     # 定义停用词路径
@@ -34,7 +48,7 @@ class NLPService:
         "logic": {
             "name": "逻辑反转",
             "words": {
-                '不', '非', '除了', '错误', '正确', '属于', '不属于', '必须', '存在', '不存在',
+                '不', '非', '除了', '错误', '正确', '属于', '不属于', '必须', '存在', '不存在','不包含','没有'
                 '符合', '不符合', '不是', '一定', '否定', '无关', '增加', '减少', '上升', '下降',
                 '加速', '减速', '大于', '小于', '等于','不等于', '大于等于', '小于等于',  '正数',
                 '负数', '正相关', '负相关', '正电荷','不得','内部', '外部','主动', '被动','正', '负',
@@ -96,13 +110,12 @@ class NLPService:
         cleaned = re.sub(pattern, '', text)
         return cleaned.strip() if cleaned.strip() else text
 
-    def standardize_text(self, text):
+    def tokenize(self, text):
         """
-        核心预处理管道：
-        正则清洗 -> 精确分词 -> 过滤虚词 -> 提取核心实词
+        核心分词逻辑，返回 token 列表。复用于预处理和 BM25 索引。
         """
         if not text:
-            return ""
+            return []
         # 1. 基础清洗 (保留汉字、英文字母、数字)
         text = self.clean_prefix(text).lower()
         words = jieba.cut(text)
@@ -113,7 +126,6 @@ class NLPService:
             if word in self.stopwords:
                 continue
             # B. 排除纯数字题号残留
-            # 只保留包含汉字或英文字母的词，剔除纯数字干扰
             if re.match(r'^\d+$', word):
                 continue
             # C. 只保留核心字符
@@ -121,8 +133,17 @@ class NLPService:
             if cleaned_word:
                 core_words.append(cleaned_word)
 
-        standard_text = "".join(core_words)
-        return standard_text if standard_text else "".join(re.findall(r'[\u4e00-\u9fa5a-zA-Z0-9]', text))
+        if not core_words:
+            fallback = "".join(re.findall(r'[\u4e00-\u9fa5a-zA-Z0-9]', text))
+            if fallback:
+                return [fallback]
+        return core_words
+
+    def standardize_text(self, text):
+        """
+        核心预处理管道拼接
+        """
+        return "".join(self.tokenize(text))
 
     def _determine_device(self):
         if torch.cuda.is_available():
@@ -220,12 +241,65 @@ class NLPService:
                 return
             self._corpus_tensor = torch.tensor(embeddings, dtype=torch.float32).to(self.device)
             self._corpus_data = metadata
+            
+            # --- 增加构建 BM25 稀疏倒排索引 ---
+            self._build_bm25_index()
 
             mem_size = self._corpus_tensor.element_size() * self._corpus_tensor.nelement()
             print(f"索引构建完成！有效数据: {len(metadata)} 条 (显存: {mem_size / 1024 / 1024:.2f} MB)")
 
         except Exception as e:
             logging.error(f"索引构建失败: {e}")
+
+    def _build_bm25_index(self):
+        """构建全量 BM25 倒排索引"""
+        print("正在构建 BM25+ 倒排索引...")
+        self._bm25_idf = {}
+        self._bm25_inverted = {}
+        self._bm25_doc_lens = []
+        
+        N = len(self._corpus_data)
+        if N == 0:
+            return
+            
+        total_len = 0
+        df = {} # word -> doc count
+        
+        for idx, item in enumerate(self._corpus_data):
+            # 将原始题目进行 tokenize
+            tokens = self.tokenize(item.get('question', ''))
+            doc_len = len(tokens)
+            self._bm25_doc_lens.append(doc_len)
+            total_len += doc_len
+            
+            # 统计词频
+            tf = {}
+            for t in tokens:
+                tf[t] = tf.get(t, 0) + 1
+                
+            # 更新 df 和 inverted matrix
+            for t, freq in tf.items():
+                if t not in self._bm25_inverted:
+                    self._bm25_inverted[t] = {}
+                self._bm25_inverted[t][idx] = freq
+                df[t] = df.get(t, 0) + 1
+                
+        self._bm25_avgdl = total_len / N if N > 0 else 0
+        
+        # 计算 IDF, 采用标准的 Robertson-Sparck Jones IDF 对取正公式
+        for t, count in df.items():
+            # 加平滑处理避免负数
+            idf = math.log(((N - count + 0.5) / (count + 0.5)) + 1)
+            self._bm25_idf[t] = idf
+        
+        # 构建 std_q -> index 哈希映射，供精确匹配 O(1) 查找
+        self._std_q_map = {}
+        for idx, item in enumerate(self._corpus_data):
+            sq = item.get('std_q')
+            if sq:
+                self._std_q_map[sq] = idx
+            
+        print(f"BM25+ 索引构建完成，词表大小: {len(self._bm25_idf)} | 精确匹配表: {len(self._std_q_map)}")
 
     def verify_match_quality(self, user_query, candidate_question, original_score):
         """
@@ -273,29 +347,99 @@ class NLPService:
         # 限制范围在 0.0 到 1.0 之间
         final_score = max(0.0, min(1.0, final_score))
         print(
-            f"校验详情 | 原始向量:{original_score:.4f} | 覆盖率:{coverage:.4f} | 惩罚:-{total_penalty:.4f} | 最终:{final_score:.4f}")
+            f"校验详情 | 原始分:{original_score:.4f} | 覆盖率:{coverage:.4f} | 惩罚:-{total_penalty:.4f} | 最终:{final_score:.4f}")
         return final_score
 
+    def _bm25_plus_search(self, query_tokens, top_k=20):
+        """执行 BM25+ 召回"""
+        if not self._bm25_doc_lens or self._bm25_avgdl == 0:
+            return []
+            
+        scores = {}  # {doc_idx: score}
+        for q in set(query_tokens):  # 去重避免重复累加
+            if q not in self._bm25_inverted:
+                continue
+            idf = self._bm25_idf.get(q, 0)
+            for doc_idx, freq in self._bm25_inverted[q].items():
+                doc_len = self._bm25_doc_lens[doc_idx]
+                numerator = freq * (self._BM25_K1 + 1)
+                denominator = freq + self._BM25_K1 * (
+                    1 - self._BM25_B + self._BM25_B * (doc_len / self._bm25_avgdl)
+                )
+                # BM25+ 的 delta 项下限保护
+                q_score = idf * (numerator / denominator + self._BM25_DELTA)
+                scores[doc_idx] = scores.get(doc_idx, 0) + q_score
+                
+        # 提取 top_k (如果数据多，建议用 heapq)
+        sorted_hits = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+        return sorted_hits
+
+    def _rrf_merge(self, bm25_hits, emb_hits, k=60):
+        """
+        RRF (Reciprocal Rank Fusion) 融合
+        bm25_hits: [(doc_idx, bm25_score), ...] 已经按分数降序
+        emb_hits:  [(doc_idx, emb_score), ...]  已经按分数降序
+        """
+        rrf_scores = {}
+        
+        for rank, (doc_idx, _) in enumerate(bm25_hits):
+            rrf_scores[doc_idx] = rrf_scores.get(doc_idx, 0) + 1.0 / (k + rank + 1)
+            
+        for rank, (doc_idx, _) in enumerate(emb_hits):
+            rrf_scores[doc_idx] = rrf_scores.get(doc_idx, 0) + 1.0 / (k + rank + 1)
+            
+        # 按照 RRF score 排序返回最终结果
+        final_sorted = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
+        return final_sorted
+
     def search_best_match(self, query_text, threshold=0.80):
-        """标准化双路召回搜索"""
-        if self.model is None or self._corpus_tensor is None:
+        """标准化双路召回搜索 + RRF融合"""
+        if self.model is None or self._corpus_tensor is None or len(self._corpus_data) == 0:
             return None, 0
-        # 1. 标准化查询词
-        std_query = self.standardize_text(query_text)
-        # 2. 向量化
+            
+        # 1. 解析查询词
+        query_tokens = self.tokenize(query_text)
+        std_query = "".join(query_tokens)
+        
+        # 快速路径：O(1) 精确匹配，跳过全部向量与 BM25 计算
+        if std_query in self._std_q_map:
+            return self._corpus_data[self._std_q_map[std_query]], 1.0
+        
+        # 2. 向量化运算 (Embedding Top-K)
         with torch.no_grad():
             query_emb = self.model.encode(std_query, convert_to_tensor=True, device=self.device)
-        # 3. 矩阵运算
         cosine_scores = util.cos_sim(query_emb, self._corpus_tensor)[0]
-        best_score, best_idx = torch.max(cosine_scores, dim=0)
-        best_score = best_score.item()
-        # 获取候选对象
-        candidate = self._corpus_data[best_idx.item()]
-        # 4. 精确匹配：比较标准化题干
-        if std_query == candidate.get('std_q'):
-            return candidate, 1.0
-        if best_score >= threshold:
-            return candidate, best_score
+        
+        top_k = min(self._RECALL_TOP_K, len(self._corpus_data))
+        emb_topk_val, emb_topk_idx = torch.topk(cosine_scores, top_k)
+        emb_hits = [(idx.item(), score.item()) for idx, score in zip(emb_topk_idx, emb_topk_val)]
+        
+        # 3. BM25+ 稀疏查询 (BM25 Top-K)
+        bm25_hits = self._bm25_plus_search(query_tokens, top_k=top_k)
+        
+        # 4. RRF 融合
+        final_hits = self._rrf_merge(bm25_hits, emb_hits, k=self._RRF_K)
+        if not final_hits:
+            return None, 0
+            
+        # 5. 复合置信度：RRF 归一化 与 Embedding 余弦分 取 max
+        best_idx, rrf_score = final_hits[0]
+        candidate = self._corpus_data[best_idx]
+        best_emb_score = cosine_scores[best_idx].item()
+        
+        # RRF 归一化到 [0, 1]（理论最大值 = 双路都排 Top-1）
+        max_rrf =  1.2/ (self._RRF_K + 1)
+        rrf_confidence = min(rrf_score / max_rrf, 1.0)
+        confidence = max(best_emb_score, rrf_confidence)
+        
+        # 双路对比日志
+        bm25_top = bm25_hits[0][0] if bm25_hits else -1
+        emb_top = emb_hits[0][0]
+        print(f"[双路召回] BM25 Top1: idx={bm25_top} | Emb Top1: idx={emb_top} | RRF Winner: idx={best_idx} | emb={best_emb_score:.4f} rrf_conf={rrf_confidence:.4f} -> confidence={confidence:.4f}")
+            
+        if confidence >= threshold:
+            return candidate, confidence
+            
         return None, 0
     def add_to_index(self, question, embedding, answer, reason, options=None):
         """热更新索引"""
@@ -309,7 +453,7 @@ class NLPService:
             "options": options,
             "reason": reason
         }
-        # 2. 更新矩阵
+        # 2. 更新矩阵和元数据
         new_vec_tensor = torch.tensor([embedding], dtype=torch.float32).to(self.device)
         if self._corpus_tensor is None:
             self._corpus_tensor = new_vec_tensor
@@ -317,6 +461,35 @@ class NLPService:
         else:
             self._corpus_tensor = torch.cat([self._corpus_tensor, new_vec_tensor], dim=0)
             self._corpus_data.append(new_metadata)
-        print(f"索引热更新成功 | 当前矩阵规模: {self._corpus_tensor.shape[0]}")
+            
+        # 3. 热更新 BM25+ (增量更新，避免全局重建)
+        new_idx = len(self._corpus_data) - 1
+        tokens = self.tokenize(question)
+        doc_len = len(tokens)
+        self._bm25_doc_lens.append(doc_len)
+        
+        tf = {}
+        for t in tokens:
+            tf[t] = tf.get(t, 0) + 1
+            
+        for t, freq in tf.items():
+            if t not in self._bm25_inverted:
+                self._bm25_inverted[t] = {}
+            self._bm25_inverted[t][new_idx] = freq
+            # 近似: 假设增量对全局 IDF 影响极小，暂时跳过全量重新计算 IDF 和 avgdl（提升热插入性能）。
+            if t not in self._bm25_idf:
+                self._bm25_idf[t] = 1.0  # 新词赋予一个基础 IDF
+                
+        # 更新 avgdl
+        N = len(self._corpus_data)
+        if N > 0:
+            self._bm25_avgdl = ((self._bm25_avgdl * (N - 1)) + doc_len) / N
+        
+        # 同步精确匹配哈希表
+        sq = new_metadata.get('std_q')
+        if sq:
+            self._std_q_map[sq] = new_idx
+            
+        print(f"索引热更新成功 | 当前矩阵规模: {self._corpus_tensor.shape[0]} | BM25同步完毕")
 
 nlp_engine = NLPService()

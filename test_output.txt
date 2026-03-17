@@ -1,0 +1,29 @@
+﻿python : Traceback (mo
+st recent call last):
+所在位置 行:1 字符: 1
++ python -c "import sy
+s; sys.stdout.reconfig
+ure(encoding='utf-8');
+ exec ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (Traceback    
+ (most recent call    
+ last)::String) [    ]
+, RemoteExceptio    n
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+  File "<string>", lin
+e 1, in <module>
+  File "<string>", lin
+e 3, in <module>
+NameError: name '__fil
+e__' is not defined. D
+id you mean: '__name__
+'?
