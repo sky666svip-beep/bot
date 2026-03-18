@@ -17,7 +17,7 @@ document.getElementById('fileInput').addEventListener('change', async function(e
 
     showLoadingInput(true);
     try {
-        const res = await fetch('/upload-doc', { method: 'POST', body: formData });
+        const res = await fetch('/api/upload-doc', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
             document.getElementById('essayInput').value = data.full_text;

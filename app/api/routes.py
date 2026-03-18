@@ -4,95 +4,33 @@ import logging
 import fitz
 import json
 import re
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify
 from docx import Document
 from sqlalchemy import func, or_
+from werkzeug.exceptions import HTTPException
 from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary, Idiom
 from app.extensions import db
-from app.services.answer_engine import solve_pipeline
-from app.services.llm_service import solve_with_vision, extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
+from app.services.llm_service import extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
 from flask_login import login_required, current_user
 
 api_bp = Blueprint('api', __name__)
-main = Blueprint('main', __name__)
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# ----------------------------------------------------------------
-# 1. 核心路由：语义搜索接口 (ML 矩阵架构)
-# ----------------------------------------------------------------
-@main.route('/search', methods=['POST'])
-def search_question():
-    user_query = request.json.get('query', '').strip()
-    if not user_query:
-        return jsonify({"success": False, "message": "请输入题目"})
-    
-    # 获取当前用户ID（如果已登录）
-    user_id = current_user.id if current_user.is_authenticated else None
-    
-    # Pipeline 内部已处理核心逻辑与入库，传入 user_id 用于保存历史
-    result = solve_pipeline(user_query, user_id=user_id)
-    
-    # 获取刚刚存入的记录 ID (增加 user_id 过滤以防只会拿到别人的)
-    query = UserHistory.query.filter_by(question=user_query)
-    if user_id:
-        query = query.filter_by(user_id=user_id)
-        
-    last_rec = query.order_by(UserHistory.id.desc()).first()
+# 安全配置：允许的文件后缀
+ALLOWED_IMAGE_EXTS = {'png', 'jpg', 'jpeg', 'webp', 'bmp'}
+ALLOWED_DOC_EXTS = {'pdf', 'docx', 'txt'}
 
-    return jsonify({
-        "success": True,
-        "data": {
-            **result,
-            "id": last_rec.id if last_rec else None,
-            "is_mistake": last_rec.is_mistake if last_rec else False
-        }
-    })
+def allowed_file(filename, allowed_set):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_set
 
-@api_bp.route('/solve', methods=['POST'])
-@login_required
-def solve():
-    """传统 Pipeline 接口,solve_pipeline 通常内部集成了数据库检索 + AI 生成"""
-    data = request.json
-    return jsonify(solve_pipeline(data.get('question', ''), data.get('options', []), user_id=current_user.id))
-
-@api_bp.route('/solve-image', methods=['POST'])
-@login_required
-def solve_image():
-    """视觉路由：图片搜题 (Vision ML)"""
-    file = request.files.get('file')
-    if not file or not file.filename:
-        return jsonify({'error': '无效图片文件'}), 400
-
-    temp_path = os.path.join(UPLOAD_FOLDER, f"vision_{uuid.uuid4()}.jpg")
-    file.save(temp_path)
-
-    try:
-        # 1. 调用视觉引擎识别
-        ai_res = solve_with_vision(temp_path)
-        
-        # 2. 入库
-        history = UserHistory(
-            question="[图片搜题]",
-            answer=ai_res.get('answer', '未识别出答案'),
-            reason=ai_res.get('reason', '无解析'),
-            source="图片搜题",
-            category=ai_res.get('category', '其他'),
-            user_id=current_user.id  # 关联当前用户
-        )
-        db.session.add(history)
-        db.session.commit()
-        # 返回规范化的 JSON
-        return jsonify({
-            'id': history.id,
-            'answer': history.answer,
-            'reason': history.reason,
-            'category': history.category,
-            'source': '图片搜题'
-        })
-    finally:
-        if os.path.exists(temp_path): os.remove(temp_path) # 删除临时图片
+@api_bp.errorhandler(Exception)
+def handle_global_error(e):
+    """统一拦截 API 异常，防止对外抛出 500 HTML页面"""
+    logging.error(f"API Error: {str(e)}", exc_info=True)
+    code = e.code if isinstance(e, HTTPException) else 500
+    return jsonify({"success": False, "message": "服务器内部错误" if code == 500 else str(e)}), code
 
 # 历史记录路由
 @api_bp.route('/history', methods=['GET'])
@@ -129,11 +67,13 @@ def toggle_history_status(hid):
     return jsonify({"success": True, "new_status": record.is_mistake})
 
 # 文档上传路由
-@main.route('/upload-doc', methods=['POST'])
+@api_bp.route('/upload-doc', methods=['POST'])
 def upload_document():
     file = request.files.get('file')
     if not file or not file.filename:
         return jsonify({"success": False, "message": "无效文件"})
+    if not allowed_file(file.filename, ALLOWED_DOC_EXTS):
+        return jsonify({"success": False, "message": "不支持的文件格式"}), 400
 
     temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4()}_{file.filename}")
     file.save(temp_path)
@@ -200,6 +140,8 @@ def correct_essay_api():
 def ocr_image_api():
     file = request.files.get('file')
     if not file: return jsonify({'success': False, 'message': '无文件'})
+    if not allowed_file(file.filename, ALLOWED_IMAGE_EXTS):
+        return jsonify({'success': False, 'message': '不支持的图片格式'})
     
     temp_path = os.path.join(UPLOAD_FOLDER, f"ocr_{uuid.uuid4()}.jpg")
     file.save(temp_path)
@@ -246,38 +188,59 @@ def generate_simulation_api():
 @api_bp.route('/simulation/submit', methods=['POST'])
 @login_required
 def submit_simulation_api():
-    """提交并保存考试结果"""
-    from app.services.answer_engine import save_question_to_db
+    """提交并保存考试结果 (批量插入版)"""
+    from app.services.nlp_service import nlp_engine
     
     data = request.json or {}
     results = data.get('results', [])
+    if not results:
+        return jsonify({"success": True, "saved_ids": []})
+        
     saved_ids = []
+    history_records = []
+    new_questions = []
     
-    for item in results:
-        # 1. 存入 UserHistory 历史记录
+    # 1. 提取文本并批量进行 Embedding 编码，避免 N+1
+    texts_to_encode = [nlp_engine.clean_prefix(item.get('question', '')) for item in results]
+    std_texts = [nlp_engine.standardize_text(t) for t in texts_to_encode]
+    
+    if nlp_engine.model:
+        embeddings = nlp_engine.model.encode(std_texts, batch_size=32, convert_to_numpy=True, normalize_embeddings=True)
+    else:
+        embeddings = [[] for _ in results]
+        
+    # 2. 组装对象
+    for i, item in enumerate(results):
+        # 历史记录
         history = UserHistory(
-            question=item.get('question'),
-            answer=item.get('answer'),
-            reason=item.get('reason'),
-            source='模拟考试',
-            category=item.get('category', '其他'),
-            is_mistake=False,  # 默认 is_mistake=False，由用户手动点收藏/错题
-            user_id=current_user.id
+            question=item.get('question'), answer=item.get('answer'), reason=item.get('reason'),
+            source='模拟考试', category=item.get('category', '其他'), is_mistake=False, user_id=current_user.id
         )
-        db.session.add(history)
-        db.session.flush()
-        saved_ids.append({"temp_id": item.get('temp_id'), "db_id": history.id})
+        history_records.append(history)
         
-        # 2. 同时存入 QuestionBank 全局题库（支持语义检索）
-        save_question_to_db(
-            question=item.get('question'),
-            answer=item.get('answer'),
-            reason=item.get('reason'),
-            options=item.get('options'),  # 如果有选项的话
-            category=item.get('category', '模拟考试')
+        # 题库记录
+        opts = item.get('options')
+        new_q = QuestionBank(
+            question=texts_to_encode[i], std_q=std_texts[i], answer=item.get('answer'),
+            reason=item.get('reason'), options=json.dumps(opts, ensure_ascii=False) if opts else None,
+            category=item.get('category', '模拟考试'), embedding=json.dumps(embeddings[i].tolist()) if len(embeddings[i])>0 else None
         )
+        new_questions.append(new_q)
         
+    # 3. 批量提交入库
+    db.session.add_all(history_records)
+    db.session.flush() # 获得历史记录id
+    for i, history in enumerate(history_records):
+        saved_ids.append({"temp_id": results[i].get('temp_id'), "db_id": history.id})
+        
+    db.session.bulk_save_objects(new_questions)
     db.session.commit()
+    
+    # 4. 热更新显存矩阵，使新提交的题目立即可搜
+    for q in new_questions:
+        if q.embedding:
+            nlp_engine.add_to_index(q.question, json.loads(q.embedding), q.answer, q.reason, q.options)
+
     return jsonify({"success": True, "saved_ids": saved_ids})
 
 # === 古诗词鉴赏模块 ===
@@ -401,9 +364,6 @@ def get_formula_detail(id):
 def search_formulas():
     """语义搜索公式"""
     from app.services.nlp_service import nlp_engine
-    import torch
-    from sentence_transformers import util
-    import numpy as np
     
     query_text = request.json.get('query', '').strip()
     category = request.json.get('category', '')
@@ -411,62 +371,11 @@ def search_formulas():
 
     if not query_text:
         return jsonify({"success": False, "message": "查询内容为空"})
-    
-    # 文本预处理：清洗前缀 + 标准化（与题库搜索逻辑一致）
-    cleaned_query = nlp_engine.clean_prefix(query_text)
-    std_query = nlp_engine.standardize_text(cleaned_query)
-    print(f"🔍 [公式语义搜索] 原始: {query_text} → 预处理: {std_query}")
-    
-    # 构建基础查询并应用筛选
-    sql_query = Formula.query
-    if category:
-        sql_query = sql_query.filter(Formula.category == category)
-    if grade:
-        sql_query = sql_query.filter(Formula.grade.like(f"%{grade}%"))
         
-    formulas = sql_query.all()
+    results = nlp_engine.search_formulas(query_text, category=category, grade=grade, top_k=5, threshold=0.5)
     
-    if not formulas:
-        return jsonify({"success": True, "data": [], "message": f"在该筛选条件下无公式数据"})
-    
-    # 构建向量矩阵
-    embeddings = []
-    valid_formulas = []
-    for f in formulas:
-        if f.embedding:
-            try:
-                vec = json.loads(f.embedding)
-                embeddings.append(vec)
-                valid_formulas.append(f)
-            except:
-                continue
-    
-    if not embeddings:
-        return jsonify({"success": True, "data": [], "message": "无有效向量数据"})
-    
-    # 对预处理后的查询进行向量化
-    query_vec = nlp_engine.encode(std_query) if std_query else nlp_engine.encode(query_text)
-    if not query_vec:
-        return jsonify({"success": False, "message": "向量化失败"})
-    
-    # 计算相似度 (统一为 float32 避免类型不匹配)
-    corpus_tensor = torch.tensor(np.array(embeddings), device=nlp_engine.device, dtype=torch.float32)
-    query_tensor = torch.tensor(query_vec, device=nlp_engine.device, dtype=torch.float32)
-    scores = util.cos_sim(query_tensor, corpus_tensor)[0]
-    
-    # 排序取 Top 5
-    top_k = min(5, len(valid_formulas))
-    top_indices = torch.topk(scores, top_k).indices.tolist()
-    
-    results = []
-    for idx in top_indices:
-        score = scores[idx].item()
-        if score >= 0.5:  # 提高阈值至 0.5，过滤低相关结果
-            f = valid_formulas[idx]
-            data = f.to_dict()
-            data['grade'] = f.grade
-            data['score'] = round(score, 4)
-            results.append(data)
+    if not results:
+        return jsonify({"success": True, "data": [], "message": "无匹配公式"})
     
     return jsonify({"success": True, "data": results})
 
@@ -519,52 +428,27 @@ def explain_formula():
         # 讲解模式，直接返回 Markdown 文本
         return jsonify({"success": True, "data": result})
 
-# === 页面渲染路由 ===
-@main.route('/view-history')
-def view_history(): return render_template('history.html')
-@main.route('/formulas')
-def formulas(): return render_template('formulas.html')
-@main.route('/calculator')
-def calculator(): return render_template('calculator.html')
-@main.route('/essay-correction')
-def essay_correction(): return render_template('essay.html')
-@main.route('/study_plan')
-def study_plan(): return render_template('study_plan.html')
-@main.route('/simulation-exam')
-def simulation_exam(): return render_template('simulation_exam.html')
-@main.route('/poetry')
-def poetry(): return render_template('poetry.html')
-
-@main.route('/word_match')
-def word_match(): return render_template('word_match.html')
-
-@main.route('/redesign')
-def redesign_preview(): return render_template('index_redesign.html')
-
-@main.route('/idiom_pk')
-def idiom_pk_page(): return render_template('idiom_pk.html')
-
-@main.route('/idioms_all')
-def idioms_all_page(): return render_template('idioms_all.html')
-
-@main.route('/idiom/<int:id>')
-def idiom_detail_page(id): 
-    # Render template, passing id to front-end for data fetching
-    return render_template('idiom_detail.html', idiom_id=id)
-
-@main.route('/Major_historical_events')
-def Major_historical_events_page(): return render_template('Major_historical_events.html')
-
 # === 单词消消乐 API ===
 @api_bp.route('/words', methods=['GET'])
 def get_random_words():
     """获取随机单词对"""
     try:
         count = request.args.get('count', 10, type=int)
-        # Randomly select 'count' words from the Vocabulary table
-        # using func.random() for SQLite/PostgreSQL
-        words = Vocabulary.query.order_by(func.random()).limit(count).all()
         
+        # 1. 查出最大 ID
+        max_id = db.session.query(func.max(Vocabulary.id)).scalar()
+        if not max_id:
+            return jsonify({"success": True, "data": []})
+
+        # 2. 生成随机 ID 列表
+        import random
+        random_ids = random.sample(range(1, max_id + 1), min(count, max_id))
+        
+        # 3. 使用 ID 列表精确查找
+        words = Vocabulary.query.filter(Vocabulary.id.in_(random_ids)).all()
+        
+        # 如果查询结果数量不足，可以考虑补充一些数据，但这里简化处理
+
         return jsonify({
             "success": True,
             "data": [w.to_dict() for w in words]
@@ -600,7 +484,18 @@ def get_random_idioms():
     """获取随机成语"""
     try:
         count = request.args.get('count', 10, type=int)
-        idioms = Idiom.query.order_by(func.random()).limit(count).all()
+
+        # 1. 查出最大 ID
+        max_id = db.session.query(func.max(Idiom.id)).scalar()
+        if not max_id:
+            return jsonify({"success": True, "data": []})
+
+        # 2. 生成随机 ID 列表
+        import random
+        random_ids = random.sample(range(1, max_id + 1), min(count, max_id))
+        
+        # 3. 使用 ID 列表精确查找
+        idioms = Idiom.query.filter(Idiom.id.in_(random_ids)).all()
         
         return jsonify({
             "success": True,

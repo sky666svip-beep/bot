@@ -34,11 +34,13 @@ def create_app(config_class=Config):
 
     # 4. 注册蓝图
     from app.api.routes import api_bp
-    from app.api.routes import main as main_bp
+    from app.api.views import page_bp
+    from app.api.api_search import search_bp
     from app.api.auth import auth_bp
 
     app.register_blueprint(api_bp, url_prefix='/api')
-    app.register_blueprint(main_bp)
+    app.register_blueprint(search_bp, url_prefix='/api')
+    app.register_blueprint(page_bp)
     app.register_blueprint(auth_bp)
 
     # 首页路由
@@ -49,7 +51,7 @@ def create_app(config_class=Config):
     with app.app_context():
         # A. 数据库表结构初始化
         from app import models
-        from app.models import QuestionBank  # 显式导入模型类
+        from app.models import QuestionBank, Formula  # 显式导入模型类
         db.create_all()
         print("数据库连接成功，数据已加载")
 
@@ -58,6 +60,7 @@ def create_app(config_class=Config):
             print("正在初始化模型与向量索引...")
             from app.services.nlp_service import nlp_engine
             nlp_engine.refresh_index(QuestionBank)
+            nlp_engine.refresh_formula_index(Formula)
             print("答题助手已就绪 ")
         except Exception as e:
             print(f"AI 引擎启动异常: {e}")

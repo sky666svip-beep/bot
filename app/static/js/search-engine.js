@@ -8,7 +8,7 @@ const SearchEngine = {
         if (!rawText) return alert("请输入题目内容或上传图片");
         this.updateStatus(true, "正在智能检索中...");
         try {
-            const response = await fetch('/search', {
+            const response = await fetch('/api/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: rawText })
@@ -184,7 +184,7 @@ const SearchEngine = {
         this.updateStatus(true, `正在深度解析文档: ${file.name}...`);
 
         try {
-            const response = await fetch('/upload-doc', {
+            const response = await fetch('/api/upload-doc', {
                 method: 'POST',
                 body: formData
             });

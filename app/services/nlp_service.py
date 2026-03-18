@@ -29,6 +29,9 @@ class NLPService:
     _bm25_doc_lens = []    # 文档长度列表，索引对齐 _corpus_data
     _bm25_avgdl = 0.0      # 平均文档长度
     _std_q_map = {}         # std_q -> corpus_data 索引，O(1) 精确匹配
+    # --- 公式矩阵扩展 ---
+    _formula_tensor = None
+    _formula_data = []
     _RRF_K = 20             # RRF 融合参数，小语料用小值拉开排名差距
     _RECALL_TOP_K = 10      # 每路召回数量，2万词库取 Top-10 已充分覆盖
     MODEL_PATH = os.path.join(os.getcwd(), 'model_cache_qwen')
@@ -248,6 +251,60 @@ class NLPService:
 
         except Exception as e:
             logging.error(f"索引构建失败: {e}")
+
+    def refresh_formula_index(self, formula_model):
+        """构建公式索引矩阵：加载所有公式向量驻留显存/内存"""
+        print("正在构建公式向量索引矩阵...")
+        try:
+            all_formulas = formula_model.query.all()
+            embeddings, metadata = [], []
+            for f in all_formulas:
+                if not f.embedding: continue
+                try:
+                    emb_vec = json.loads(f.embedding)
+                    if len(emb_vec) == self.embedding_dim:
+                        embeddings.append(emb_vec)
+                        f_dict = f.to_dict()
+                        f_dict['grade'] = f.grade  # to_dict中遗漏了grade，需手动补齐
+                        metadata.append(f_dict)
+                except:
+                    continue
+
+            if not embeddings:
+                print("公式索引未构建：无有效向量数据")
+                return
+            self._formula_tensor = torch.tensor(embeddings, dtype=torch.float32).to(self.device)
+            self._formula_data = metadata
+            
+            mem_size = self._formula_tensor.element_size() * self._formula_tensor.nelement()
+            print(f"公式索引构建完成！有效数据: {len(metadata)} 条 (显存: {mem_size / 1024 / 1024:.2f} MB)")
+        except Exception as e:
+            logging.error(f"公式索引构建失败: {e}")
+
+    def search_formulas(self, query_text, category="", grade="", top_k=5, threshold=0.5):
+        """基于常驻缓存矩阵进行公式语义搜索"""
+        if self.model is None or self._formula_tensor is None or not self._formula_data:
+            return []
+            
+        cleaned_query = self.clean_prefix(query_text)
+        std_query = self.standardize_text(cleaned_query)
+        query_vec = self.encode(std_query) if std_query else self.encode(query_text)
+        if not query_vec: return []
+            
+        query_tensor = torch.tensor(query_vec, dtype=torch.float32).to(self.device)
+        scores = util.cos_sim(query_tensor, self._formula_tensor)[0]
+        
+        valid_indices = torch.where(scores >= threshold)[0]
+        results = []
+        for idx in valid_indices:
+            idx_item = idx.item()
+            f_data = self._formula_data[idx_item]
+            if category and f_data.get('category') != category: continue
+            if grade and (grade not in (f_data.get('grade') or "")): continue
+                
+            results.append({**f_data, 'score': round(scores[idx_item].item(), 4)})
+            
+        return sorted(results, key=lambda x: x['score'], reverse=True)[:top_k]
 
     def _build_bm25_index(self):
         """构建全量 BM25 倒排索引"""
