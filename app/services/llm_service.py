@@ -1,6 +1,8 @@
 import os
 import json
 import logging
+import re
+import time
 from dashscope import MultiModalConversation
 from openai import OpenAI
 
@@ -16,23 +18,53 @@ client = OpenAI(
     timeout=60.0
 )
 
-def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出 JSON。", model="qwen-plus"):
+def _extract_json_string(text):
     """
+    强制从大模型输出的文本中提取合法的 JSON 字符串，
+    处理可能携带的 Markdown 代码块或前后废话。
     """
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_role},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1
-        )
-        return json.loads(response.choices[0].message.content)
-    except Exception as e:
-        logging.error(f"LLM Call Error: {e}")
-        return {} 
+    text = text.strip()
+    # 尝试匹配最外层的花括号或方括号
+    start_obj = text.find('{')
+    end_obj = text.rfind('}')
+    start_arr = text.find('[')
+    end_arr = text.rfind(']')
+    
+    len_obj = end_obj - start_obj if start_obj != -1 and end_obj != -1 else -1
+    len_arr = end_arr - start_arr if start_arr != -1 and end_arr != -1 else -1
+    
+    if len_obj > 0 and len_obj > len_arr:
+        return text[start_obj:end_obj+1]
+    elif len_arr > 0:
+        return text[start_arr:end_arr+1]
+        
+    return text # 如果都没找到，返回原样交给 json.loads 去报错
+
+def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出 JSON。", model="qwen3.5-flash", max_retries=2):
+    """
+    通用大模型 JSON 调用接口，附带指数退避重试和 JSON 净化
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_role},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.1
+            )
+            raw_content = response.choices[0].message.content
+            clean_content = _extract_json_string(raw_content)
+            return json.loads(clean_content)
+        except Exception as e:
+            logging.warning(f"LLM Call Error (Attempt {attempt + 1}/{max_retries + 1}): {e}")
+            if attempt < max_retries:
+                time.sleep(2 ** attempt) # 1s, 2s 避让
+            else:
+                logging.error(f"LLM Call Failed after {max_retries + 1} attempts.")
+                return {} 
 
 def call_llm(question, options=None, is_doc=False):
     """文本搜题"""
@@ -58,43 +90,39 @@ def call_llm(question, options=None, is_doc=False):
     return _call_qwen_json(prompt, system_role="解题专家")
 
 def solve_with_vision(image_path):
-    """视觉搜题：直接调用 VL 模型，移除复杂的正则兜底"""
-    try:
-        image_uri = f"file://{os.path.abspath(image_path)}"
-        prompt = """
-        你是一个全能解题专家。请识别图片中的题目，并直接给出答案和解析。
-        【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记和除答案和解析以外的内容。
-        格式要求：
-        {
-          "answer": "最终答案",
-          "reason": "简短的解题步骤和思路",
-          "category": "从[数学, 物理, 化学, 英语, 语文, 历史, 地理, 生物, 计算机, 其他]中选择一个"
-        }
-        """
-        messages = [{
-            "role": "user",
-            "content": [
-                {"image": image_uri},
-                {"text": prompt}
-            ]
-        }]
-        
-        resp = MultiModalConversation.call(model='qwen3-vl-flash', messages=messages)
-        if resp.status_code == 200 and resp.output.choices:
-            content = resp.output.choices[0].message.content
-            if isinstance(content, list):
-                raw_text = "".join([item.get('text', '') for item in content])
+    """视觉搜题：支持重试与JSON净化"""
+    max_retries = 2
+    image_uri = f"file://{os.path.abspath(image_path)}"
+    prompt = """
+    你是一个全能解题专家。请识别图片中的题目，并直接给出答案和解析。
+    【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记和除答案和解析以外的内容。
+    格式要求：
+    {
+      "answer": "最终答案",
+      "reason": "简短的解题步骤和思路",
+      "category": "从[数学, 物理, 化学, 英语, 语文, 历史, 地理, 生物, 计算机, 其他]中选择一个"
+    }
+    """
+    messages = [{
+        "role": "user",
+        "content": [{"image": image_uri}, {"text": prompt}]
+    }]
+    
+    for attempt in range(max_retries + 1):
+        try:
+            resp = MultiModalConversation.call(model='qwen3-vl-flash', messages=messages)
+            if resp.status_code == 200 and resp.output.choices:
+                content = resp.output.choices[0].message.content
+                raw_text = "".join([item.get('text', '') for item in content]) if isinstance(content, list) else str(content)
+                clean_content = _extract_json_string(raw_text)
+                return json.loads(clean_content)
             else:
-                raw_text = str(content)
-                
-            clean_content = raw_text.replace("```json", "").replace("```", "").strip()
-            return json.loads(clean_content)
-        else:
-            raise Exception(resp.message)
-            
-    except Exception as e:
-        logging.error(f"Vision Error: {e}")
-        return {"answer": "识别失败", "reason": str(e), "category": "其他"}
+                raise Exception(resp.message)
+        except Exception as e:
+            logging.warning(f"Vision Error (Attempt {attempt + 1}/{max_retries + 1}): {e}")
+            if attempt < max_retries: time.sleep(1)
+    
+    return {"answer": "识别失败", "reason": "图片解析服务暂不可用，请稍后重试", "category": "其他"}
 
 def analyze_essay(text, essay_type):
     """作文批改"""
@@ -126,23 +154,26 @@ def analyze_essay(text, essay_type):
 
 def extract_text_from_image(image_path):
     """OCR 纯文本提取"""
-    try:
-        image_uri = f"file://{os.path.abspath(image_path)}"
-        resp = MultiModalConversation.call(
-            model='qwen3-vl-flash',
-            messages=[{"role": "user", "content": [{"image": image_uri}, {"text": "OCR提取图片文字，保持段落，不要废话，直接输出文本。"}]}]
-        )
-        if resp.status_code == 200 and resp.output.choices:
-            content = resp.output.choices[0].message.content
-            if isinstance(content, list):
-                raw_text = "".join([item.get('text', '') for item in content])
-            else:
-                raw_text = str(content)
-            return raw_text.strip()
-        return ""
-    except Exception as e:
-        logging.error(f"OCR Error: {e}")
-        return ""
+    max_retries = 2
+    image_uri = f"file://{os.path.abspath(image_path)}"
+    
+    for attempt in range(max_retries + 1):
+        try:
+            resp = MultiModalConversation.call(
+                model='qwen3-vl-flash',
+                messages=[{"role": "user", "content": [{"image": image_uri}, {"text": "OCR提取图片文字，保持段落，不要废话，直接输出文本。"}]}]
+            )
+            if resp.status_code == 200 and resp.output.choices:
+                content = resp.output.choices[0].message.content
+                if isinstance(content, list):
+                    return "".join([item.get('text', '') for item in content]).strip()
+                return str(content).strip()
+            raise Exception(resp.message)
+        except Exception as e:
+            logging.warning(f"OCR Error (Attempt {attempt + 1}/{max_retries + 1}): {e}")
+            if attempt < max_retries: time.sleep(1)
+            
+    return ""
 
 def generate_study_plan(profile_data):
     """学习计划"""
@@ -193,7 +224,7 @@ def generate_poetry_analysis(keyword):
     关键词：{keyword}
     要求：深入探讨思想内涵、意象意境、语言风格及表达技巧。
     
-    输出 JSON：
+    【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记或任何其他解释性文字。"content"字段必须是完整的文章内容，不是选段。必须包含以下完整的结构：
     {{ 
         "title": "...", 
         "author": "...", 
@@ -203,31 +234,11 @@ def generate_poetry_analysis(keyword):
         "annotations": [ {{ "word": "...", "note": "..." }} ] 
     }}
     """
-    
-    try:
-        response = client.chat.completions.create(
-            model="qwen-plus",
-            messages=[
-                {"role": "system", "content": "古诗词鉴赏专家"},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1
-        )
-        content = response.choices[0].message.content
-        
-        # 尝试清理可能存在的 markdown 标记
-        clean_content = content.replace("```json", "").replace("```", "").strip()
-        data = json.loads(clean_content)
-        
-        if not isinstance(data, dict):
-            logging.error(f"Generate poetry analysis returned non-dict JSON: {type(data)} - {data}")
-            return {}
-            
-        return data
-    except Exception as e:
-        logging.error(f"Generate poetry analysis LLM Call Error: {e}")
+    # 古诗深度赏析需要较强的长文本推理和结构化输出能力，轻量级模型容易出现截断或字段丢失，这里显式指定使用 qwen-plus
+    result = _call_qwen_json(prompt, system_role="古诗词鉴赏专家", model="qwen3.5-plus")
+    if not isinstance(result, dict) or not result.get('title') or not result.get('content'):
         return {}
+    return result
 
 def generate_formula_content(formula_context, type="explain"):
     """

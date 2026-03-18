@@ -20,6 +20,7 @@ instance/
 **/data/
 # 日志目录
 logs/
+test/
 # ===================== 部署相关 =====================
 cloudflared.exe
 config.yml

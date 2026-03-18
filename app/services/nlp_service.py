@@ -20,7 +20,6 @@ class NLPService:
     _corpus_tensor = None
     # corpus_data: 存放题目元数据 (ID, 答案等)，驻留在内存
     _corpus_data = []
-    
     # --- BM25+ 核心数据结构 ---
     _BM25_K1 = 1.5
     _BM25_B = 0.75
@@ -30,7 +29,6 @@ class NLPService:
     _bm25_doc_lens = []    # 文档长度列表，索引对齐 _corpus_data
     _bm25_avgdl = 0.0      # 平均文档长度
     _std_q_map = {}         # std_q -> corpus_data 索引，O(1) 精确匹配
-    # --- 召回与融合超参数（适配 ≤2万小语料） ---
     _RRF_K = 20             # RRF 融合参数，小语料用小值拉开排名差距
     _RECALL_TOP_K = 10      # 每路召回数量，2万词库取 Top-10 已充分覆盖
     MODEL_PATH = os.path.join(os.getcwd(), 'model_cache_qwen')
@@ -428,7 +426,7 @@ class NLPService:
         best_emb_score = cosine_scores[best_idx].item()
         
         # RRF 归一化到 [0, 1]（理论最大值 = 双路都排 Top-1）
-        max_rrf =  1.2/ (self._RRF_K + 1)
+        max_rrf =  2/ (self._RRF_K + 1)
         rrf_confidence = min(rrf_score / max_rrf, 1.0)
         confidence = max(best_emb_score, rrf_confidence)
         

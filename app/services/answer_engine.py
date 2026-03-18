@@ -1,6 +1,7 @@
 #app/services/answer_engine.py
 import json
 import re
+from collections import Counter
 import numpy as np
 from .nlp_service import nlp_engine
 from .llm_service import call_llm
@@ -18,7 +19,17 @@ def extract_core_numbers(text):
     clean_text = nlp_engine.clean_prefix(text)
         # 提取题目本身数字
     nums = re.findall(r'\d+(?:\.\d+)?', clean_text)
-    return sorted(nums)
+    # 转换为 float，避免 "1" 和 "1.0" 因为字符串不匹配而导致误拦截
+    return sorted([float(n) for n in nums])
+
+def _parse_options(raw_opts):
+    """辅助函数：安全地解析选项 JSON 字符串"""
+    if not raw_opts:
+        return None
+    try:
+        return json.loads(raw_opts) if isinstance(raw_opts, str) else raw_opts
+    except Exception:
+        return raw_opts
 
 def is_semantically_identical(str1, str2):
     """
@@ -30,16 +41,17 @@ def is_semantically_identical(str1, str2):
     s1 = re.sub(r'[^\u4e00-\u9fa5a-zA-Z0-9]', '', str1)
     s2 = re.sub(r'[^\u4e00-\u9fa5a-zA-Z0-9]', '', str2)
 
-    # 字符排序对比
-    return sorted(list(s1)) == sorted(list(s2))
+    # 字符频次对比 (时间复杂度 O(N) 优于 sorted 的 O(N log N))
+    return Counter(s1) == Counter(s2)
 
-def fast_db_lookup(question_text):
+def fast_db_lookup(question_text, std_query=None):
     """
    极速检索模块 (数据库层)
     策略：预处理标准化 -> 数据库 B-Tree 索引查找
     """
-    # 1. 获取标准化文本 (复用 nlp_engine 的逻辑，保证清洗规则一致)
-    std_query = nlp_engine.standardize_text(question_text)
+    # 1. 获取标准化文本，优先使用传入值避免重复计算
+    if not std_query:
+        std_query = nlp_engine.standardize_text(question_text)
 
     if not std_query:
         return None
@@ -52,14 +64,7 @@ def fast_db_lookup(question_text):
     if match:
         print(f"✅ [极速检索] 命中数据库! ID: {match.id}")
 
-        # 解析选项格式
-        raw_opts = match.options
-        parsed_opts = None
-        try:
-            if raw_opts:
-                parsed_opts = json.loads(raw_opts) if isinstance(raw_opts, str) else raw_opts
-        except:
-            parsed_opts = raw_opts
+        parsed_opts = _parse_options(match.options)
 
         return {
             "source": "本地题库 (精确匹配)",
@@ -77,7 +82,7 @@ def solve_pipeline(question_text, options=None, user_id=None):
     # --- 第一步：标准化预处理  ---
     std_q = nlp_engine.standardize_text(question_text)
     #  阶段一：数据库极速精确匹配
-    fast_result = fast_db_lookup(question_text)
+    fast_result = fast_db_lookup(question_text, std_query=std_q)
     if fast_result:
         # 命中即终止，跳过后续所有向量计算和 AI 调用
         return fast_result
@@ -117,10 +122,7 @@ def solve_pipeline(question_text, options=None, user_id=None):
                     final_score = 1.0
                 else:
                     match_type = f"相似度 {round(final_score, 2)}"
-                raw_opts = best_match.get('options')
-                parsed_opts = None
-                if raw_opts:
-                    parsed_opts = json.loads(raw_opts) if isinstance(raw_opts, str) else raw_opts
+                parsed_opts = _parse_options(best_match.get('options'))
                 return {
                     "source": f"本地题库 ({match_type})",
                     "answer": best_match['answer'],
@@ -149,7 +151,8 @@ def solve_pipeline(question_text, options=None, user_id=None):
         answer=ai_answer, 
         reason=ai_res.get('reason', 'AI生成'), 
         options=options, 
-        category=ai_category
+        category=ai_category,
+        std_q_text=std_q
     )
     
     # 存入历史记录 (这是 UserHistory, 区别于 QuestionBank)
@@ -166,7 +169,7 @@ def solve_pipeline(question_text, options=None, user_id=None):
     except Exception as e:
         print(f"历史记录保存失败: {e}")
     return {
-        "answer": ai_res.get('answer'),
+        "answer": ai_answer,  # 使用转化后的结果，保证接口返回类型一致
         "reason": ai_res.get('reason'),
         "category": ai_category,
         "source": f"AI {ai_res.get('type', '智能分析')}",
@@ -185,14 +188,15 @@ def save_to_history(q, a, r, source, category='其他', user_id=None):
     )
     db.session.add(history)
 
-def save_question_to_db(question, answer, reason, options=None, category='其他'):
+def save_question_to_db(question, answer, reason, options=None, category='其他', std_q_text=None):
     """
     封装入库逻辑：去重检查 -> 生成向量 -> 存 SQL -> 更新显存索引
     供 solve_pipeline 和 formula_example_generation 共用
     """
     try:
         # 0. 计算标准化指纹并检查去重
-        std_q_text = nlp_engine.standardize_text(question)
+        if not std_q_text:
+            std_q_text = nlp_engine.standardize_text(question)
         existing = QuestionBank.query.filter_by(std_q=std_q_text).first()
         if existing:
             print(f"⚠️ [跳过入库] 题目已存在 ID: {existing.id} - {question[:20]}...")
