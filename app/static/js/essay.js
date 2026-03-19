@@ -17,18 +17,17 @@ document.getElementById('fileInput').addEventListener('change', async function(e
 
     showLoadingInput(true);
     try {
-        const res = await fetch('/api/upload-doc', { method: 'POST', body: formData });
-        const data = await res.json();
+        const data = await TaskPoller.submitAndPoll('/api/upload-doc', { method: 'POST', body: formData });
         if (data.success) {
             document.getElementById('essayInput').value = data.full_text;
         } else {
             alert('解析失败: ' + data.message);
         }
     } catch (err) {
-        alert('上传出错');
+        alert('上传出错: ' + err.message);
     } finally {
         showLoadingInput(false);
-        e.target.value = ''; // 重置
+        e.target.value = '';
     }
 });
 
@@ -68,12 +67,11 @@ async function submitCorrection() {
     document.getElementById('submitBtn').disabled = true;
 
     try {
-        const res = await fetch('/api/essay/correct', {
+        const data = await TaskPoller.submitAndPoll('/api/essay/correct', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: text, type: currentMode })
         });
-        const data = await res.json();
 
         if (data.success) {
             renderResult(data.data);
@@ -81,7 +79,7 @@ async function submitCorrection() {
             alert(data.message);
         }
     } catch (err) {
-        alert('请求失败: ' + err);
+        alert('请求失败: ' + err.message);
     } finally {
         document.getElementById('loading').classList.add('d-none');
         document.getElementById('submitBtn').disabled = false;
@@ -218,25 +216,15 @@ if (imgInput) {
         formData.append('file', file);
 
         try {
-            const res = await fetch('/api/ocr-image', {
+            const data = await TaskPoller.submitAndPoll('/api/ocr-image', {
                 method: 'POST',
                 body: formData
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP 错误: ${res.status}`);
-            }
-
-            const data = await res.json();
-
             if (data.success) {
-                // 3. 成功拿到文字，填入输入框
                 const extractedText = data.text;
-
                 const textArea = document.getElementById('essayInput');
                 textArea.value = extractedText;
-
-                // 自动调整高度 (可选)
                 textArea.style.height = 'auto';
                 textArea.style.height = textArea.scrollHeight + 'px';
             } else {
@@ -246,9 +234,8 @@ if (imgInput) {
         } catch (err) {
             alert('上传出错: ' + err.message);
         } finally {
-            // 4. 无论成功失败，都要恢复界面
             showLoadingInput(false);
-            e.target.value = ''; // 清空 input，防止下次选同一张图不触发 change
+            e.target.value = '';
         }
     });
 } else {

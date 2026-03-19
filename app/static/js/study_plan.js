@@ -51,12 +51,11 @@ const Planner = {
         document.getElementById('resultArea').classList.add('d-none');
 
         try {
-            const res = await fetch('/api/study-plan/generate', {
+            const result = await TaskPoller.submitAndPoll('/api/study-plan/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            const result = await res.json();
 
             if (result.success) {
                 this.currentPlan = result.data.tasks;

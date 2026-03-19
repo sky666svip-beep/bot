@@ -1,10 +1,11 @@
 import os
 import uuid
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app.models import UserHistory
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
 from app.services.llm_service import solve_with_vision
+from app.services.async_task import task_mgr
 from flask_login import login_required, current_user
 
 search_bp = Blueprint('search', __name__)
@@ -24,35 +25,45 @@ def search_question():
     user_query = request.json.get('query', '').strip()
     if not user_query:
         return jsonify({"success": False, "message": "请输入题目"})
-    
-    # 获取当前用户ID（如果已登录）
-    user_id = current_user.id if current_user.is_authenticated else None
-    
-    # Pipeline 内部已处理核心逻辑与入库，传入 user_id 用于保存历史
-    result = solve_pipeline(user_query, user_id=user_id)
-    
-    # 获取刚刚存入的记录 ID (增加 user_id 过滤以防只会拿到别人的)
-    query = UserHistory.query.filter_by(question=user_query)
-    if user_id:
-        query = query.filter_by(user_id=user_id)
-        
-    last_rec = query.order_by(UserHistory.id.desc()).first()
 
-    return jsonify({
-        "success": True,
-        "data": {
-            **result,
-            "id": last_rec.id if last_rec else None,
-            "is_mistake": last_rec.is_mistake if last_rec else False
+    user_id = current_user.id if current_user.is_authenticated else None
+    app = current_app._get_current_object()
+
+    def _search():
+        result = solve_pipeline(user_query, user_id=user_id)
+        # 获取刚刚存入的记录 ID
+        query = UserHistory.query.filter_by(question=user_query)
+        if user_id:
+            query = query.filter_by(user_id=user_id)
+        last_rec = query.order_by(UserHistory.id.desc()).first()
+        return {
+            "success": True,
+            "data": {
+                **result,
+                "id": last_rec.id if last_rec else None,
+                "is_mistake": last_rec.is_mistake if last_rec else False
+            }
         }
-    })
+
+    owner = str(user_id) if user_id else request.cookies.get('session', 'anon')
+    task_id = task_mgr.submit(_search, app=app, owner=owner)
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 @search_bp.route('/solve', methods=['POST'])
 @login_required
 def solve():
-    """传统 Pipeline 接口,solve_pipeline 通常内部集成了数据库检索 + AI 生成"""
+    """传统 Pipeline 接口"""
     data = request.json
-    return jsonify(solve_pipeline(data.get('question', ''), data.get('options', []), user_id=current_user.id))
+    uid = current_user.id
+    question = data.get('question', '')
+    options = data.get('options', [])
+    app = current_app._get_current_object()
+
+    def _solve():
+        return solve_pipeline(question, options, user_id=uid)
+
+    task_id = task_mgr.submit(_solve, app=app, owner=str(uid))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 @search_bp.route('/solve-image', methods=['POST'])
 @login_required
@@ -66,30 +77,32 @@ def solve_image():
 
     temp_path = os.path.join(UPLOAD_FOLDER, f"vision_{uuid.uuid4()}.jpg")
     file.save(temp_path)
+    uid = current_user.id
+    app = current_app._get_current_object()
 
-    try:
-        # 1. 调用视觉引擎识别
-        ai_res = solve_with_vision(temp_path)
-        
-        # 2. 返回规范化的 JSON，并交由前端处理入库 (分离解耦)
-        # 注：为了完全兼容您现有的实现，原本的数据库入库也在此一并保留
-        history = UserHistory(
-            question="[图片搜题]",
-            answer=ai_res.get('answer', '未识别出答案'),
-            reason=ai_res.get('reason', '无解析'),
-            source="图片搜题",
-            category=ai_res.get('category', '其他'),
-            user_id=current_user.id
-        )
-        db.session.add(history)
-        db.session.commit()
-        
-        return jsonify({
-            'id': history.id,
-            'answer': history.answer,
-            'reason': history.reason,
-            'category': history.category,
-            'source': '图片搜题'
-        })
-    finally:
-        if os.path.exists(temp_path): os.remove(temp_path)
+    def _solve_img():
+        try:
+            ai_res = solve_with_vision(temp_path)
+            # 入库
+            history = UserHistory(
+                question="[图片搜题]",
+                answer=ai_res.get('answer', '未识别出答案'),
+                reason=ai_res.get('reason', '无解析'),
+                source="图片搜题",
+                category=ai_res.get('category', '其他'),
+                user_id=uid
+            )
+            db.session.add(history)
+            db.session.commit()
+            return {
+                'id': history.id,
+                'answer': history.answer,
+                'reason': history.reason,
+                'category': history.category,
+                'source': '图片搜题'
+            }
+        finally:
+            if os.path.exists(temp_path): os.remove(temp_path)
+
+    task_id = task_mgr.submit(_solve_img, app=app, owner=str(uid))
+    return jsonify({'success': True, 'task_id': task_id}), 202

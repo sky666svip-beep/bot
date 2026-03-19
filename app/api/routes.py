@@ -4,13 +4,14 @@ import logging
 import fitz
 import json
 import re
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from docx import Document
 from sqlalchemy import func, or_
 from werkzeug.exceptions import HTTPException
 from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary, Idiom
 from app.extensions import db
 from app.services.llm_service import extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
+from app.services.async_task import task_mgr
 from flask_login import login_required, current_user
 
 api_bp = Blueprint('api', __name__)
@@ -31,6 +32,14 @@ def handle_global_error(e):
     logging.error(f"API Error: {str(e)}", exc_info=True)
     code = e.code if isinstance(e, HTTPException) else 500
     return jsonify({"success": False, "message": "服务器内部错误" if code == 500 else str(e)}), code
+
+# === 通用任务轮询端点 ===
+@api_bp.route('/task/<task_id>/status', methods=['GET'])
+def poll_task(task_id):
+    """查询异步任务状态，毫秒级响应，不占线程资源"""
+    # 传入当前用户 ID 做权限校验，未登录用 session ID
+    owner = str(current_user.id) if current_user.is_authenticated else request.cookies.get('session', 'anon')
+    return jsonify(task_mgr.get_status(task_id, owner=owner))
 
 # 历史记录路由
 @api_bp.route('/history', methods=['GET'])
@@ -77,34 +86,36 @@ def upload_document():
 
     temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4()}_{file.filename}")
     file.save(temp_path)
-    
-    try:
-        ext = file.filename.lower().split('.')[-1]
-        text = ""
-        
-        if ext == 'pdf':
-            with fitz.open(temp_path) as doc:
-                text = "".join([page.get_text() for page in doc])
-        elif ext == 'docx':
-            doc = Document(temp_path)
-            text = "\n".join([p.text for p in doc.paragraphs])
-            for table in doc.tables:
-                for row in table.rows:
-                    text += "\n" + " ".join([cell.text for cell in row.cells])
-        elif ext == 'txt':
-            with open(temp_path, 'r', encoding='utf-8') as f:
-                text = f.read()
-        else:
-            return jsonify({"success": False, "message": "不支持的格式"})
+    ext = file.filename.lower().split('.')[-1]
 
-        if not text.strip():
-            return jsonify({"success": False, "message": "文档内容为空"})
-            
-        return jsonify({"success": True, "full_text": text})
-    except Exception as e:
-        return jsonify({"success": False, "message": f"解析错误: {str(e)}"})
-    finally:
-        if os.path.exists(temp_path): os.remove(temp_path)
+    def _parse_doc():
+        """后台线程：解析文档"""
+        try:
+            text = ""
+            if ext == 'pdf':
+                with fitz.open(temp_path) as doc:
+                    text = "".join([page.get_text() for page in doc])
+            elif ext == 'docx':
+                doc = Document(temp_path)
+                text = "\n".join([p.text for p in doc.paragraphs])
+                for table in doc.tables:
+                    for row in table.rows:
+                        text += "\n" + " ".join([cell.text for cell in row.cells])
+            elif ext == 'txt':
+                with open(temp_path, 'r', encoding='utf-8') as f:
+                    text = f.read()
+            else:
+                return {"success": False, "message": "不支持的格式"}
+            if not text.strip():
+                return {"success": False, "message": "文档内容为空"}
+            return {"success": True, "full_text": text}
+        except Exception as e:
+            return {"success": False, "message": f"解析错误: {str(e)}"}
+        finally:
+            if os.path.exists(temp_path): os.remove(temp_path)
+
+    task_id = task_mgr.submit(_parse_doc, owner=request.cookies.get('session', 'anon'))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 @api_bp.route('/dashboard', methods=['GET'])
 @login_required
@@ -131,9 +142,14 @@ def correct_essay_api():
     text = data.get('text', '')
     if len(text) < 5:
         return jsonify({"success": False, "message": "内容太短"})
-    # 调用 llm_service 中的核心逻辑
-    result = analyze_essay(text, data.get('type', 'chinese'))
-    return jsonify({"success": True, "data": result})
+    essay_type = data.get('type', 'chinese')
+
+    def _correct():
+        result = analyze_essay(text, essay_type)
+        return {"success": True, "data": result}
+
+    task_id = task_mgr.submit(_correct, owner=request.cookies.get('session', 'anon'))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 纯文字识别 API (供作文拍照批改使用) ===
 @api_bp.route('/ocr-image', methods=['POST'])
@@ -142,13 +158,18 @@ def ocr_image_api():
     if not file: return jsonify({'success': False, 'message': '无文件'})
     if not allowed_file(file.filename, ALLOWED_IMAGE_EXTS):
         return jsonify({'success': False, 'message': '不支持的图片格式'})
-    
+
     temp_path = os.path.join(UPLOAD_FOLDER, f"ocr_{uuid.uuid4()}.jpg")
     file.save(temp_path)
-    try:
-        return jsonify({'success': True, 'text': extract_text_from_image(temp_path)})
-    finally:
-        if os.path.exists(temp_path): os.remove(temp_path)
+
+    def _ocr():
+        try:
+            return {'success': True, 'text': extract_text_from_image(temp_path)}
+        finally:
+            if os.path.exists(temp_path): os.remove(temp_path)
+
+    task_id = task_mgr.submit(_ocr, owner=request.cookies.get('session', 'anon'))
+    return jsonify({'success': True, 'task_id': task_id}), 202
 
 # === 学习计划板块 ===
 
@@ -157,8 +178,12 @@ def generate_plan_api():
     data = request.json or {}
     if 'grade' not in data or 'duration' not in data:
         return jsonify({"success": False, "message": "缺少必要参数"})
-    
-    return jsonify({"success": True, "data": generate_study_plan(data)})
+
+    def _gen_plan():
+        return {"success": True, "data": generate_study_plan(data)}
+
+    task_id = task_mgr.submit(_gen_plan, owner=request.cookies.get('session', 'anon'))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 @api_bp.route('/study-plan/weakness-analysis', methods=['GET'])
 @login_required
@@ -183,65 +208,72 @@ def analyze_weakness_api():
 @api_bp.route('/simulation/generate', methods=['POST'])
 def generate_simulation_api():
     """生成试题接口"""
-    return jsonify({"success": True, "questions": generate_exam_questions(request.json)})
+    criteria = request.json
+
+    def _gen_exam():
+        return {"success": True, "questions": generate_exam_questions(criteria)}
+
+    task_id = task_mgr.submit(_gen_exam, owner=request.cookies.get('session', 'anon'))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 @api_bp.route('/simulation/submit', methods=['POST'])
 @login_required
 def submit_simulation_api():
-    """提交并保存考试结果 (批量插入版)"""
-    from app.services.nlp_service import nlp_engine
-    
+    """提交并保存考试结果 (异步批量版)"""
     data = request.json or {}
     results = data.get('results', [])
     if not results:
         return jsonify({"success": True, "saved_ids": []})
-        
-    saved_ids = []
-    history_records = []
-    new_questions = []
-    
-    # 1. 提取文本并批量进行 Embedding 编码，避免 N+1
-    texts_to_encode = [nlp_engine.clean_prefix(item.get('question', '')) for item in results]
-    std_texts = [nlp_engine.standardize_text(t) for t in texts_to_encode]
-    
-    if nlp_engine.model:
-        embeddings = nlp_engine.model.encode(std_texts, batch_size=32, convert_to_numpy=True, normalize_embeddings=True)
-    else:
-        embeddings = [[] for _ in results]
-        
-    # 2. 组装对象
-    for i, item in enumerate(results):
-        # 历史记录
-        history = UserHistory(
-            question=item.get('question'), answer=item.get('answer'), reason=item.get('reason'),
-            source='模拟考试', category=item.get('category', '其他'), is_mistake=False, user_id=current_user.id
-        )
-        history_records.append(history)
-        
-        # 题库记录
-        opts = item.get('options')
-        new_q = QuestionBank(
-            question=texts_to_encode[i], std_q=std_texts[i], answer=item.get('answer'),
-            reason=item.get('reason'), options=json.dumps(opts, ensure_ascii=False) if opts else None,
-            category=item.get('category', '模拟考试'), embedding=json.dumps(embeddings[i].tolist()) if len(embeddings[i])>0 else None
-        )
-        new_questions.append(new_q)
-        
-    # 3. 批量提交入库
-    db.session.add_all(history_records)
-    db.session.flush() # 获得历史记录id
-    for i, history in enumerate(history_records):
-        saved_ids.append({"temp_id": results[i].get('temp_id'), "db_id": history.id})
-        
-    db.session.bulk_save_objects(new_questions)
-    db.session.commit()
-    
-    # 4. 热更新显存矩阵，使新提交的题目立即可搜
-    for q in new_questions:
-        if q.embedding:
-            nlp_engine.add_to_index(q.question, json.loads(q.embedding), q.answer, q.reason, q.options)
 
-    return jsonify({"success": True, "saved_ids": saved_ids})
+    uid = current_user.id
+    app = current_app._get_current_object()
+
+    def _submit_exam():
+        from app.services.nlp_service import nlp_engine
+
+        saved_ids = []
+        history_records = []
+        new_questions = []
+
+        texts_to_encode = [nlp_engine.clean_prefix(item.get('question', '')) for item in results]
+        std_texts = [nlp_engine.standardize_text(t) for t in texts_to_encode]
+
+        if nlp_engine.model:
+            embeddings = nlp_engine.model.encode(std_texts, batch_size=32, convert_to_numpy=True, normalize_embeddings=True)
+        else:
+            embeddings = [[] for _ in results]
+
+        for i, item in enumerate(results):
+            history = UserHistory(
+                question=item.get('question'), answer=item.get('answer'), reason=item.get('reason'),
+                source='模拟考试', category=item.get('category', '其他'), is_mistake=False, user_id=uid
+            )
+            history_records.append(history)
+
+            opts = item.get('options')
+            new_q = QuestionBank(
+                question=texts_to_encode[i], std_q=std_texts[i], answer=item.get('answer'),
+                reason=item.get('reason'), options=json.dumps(opts, ensure_ascii=False) if opts else None,
+                category=item.get('category', '模拟考试'), embedding=json.dumps(embeddings[i].tolist()) if len(embeddings[i])>0 else None
+            )
+            new_questions.append(new_q)
+
+        db.session.add_all(history_records)
+        db.session.flush()
+        for i, history in enumerate(history_records):
+            saved_ids.append({"temp_id": results[i].get('temp_id'), "db_id": history.id})
+
+        db.session.bulk_save_objects(new_questions)
+        db.session.commit()
+
+        for q in new_questions:
+            if q.embedding:
+                nlp_engine.add_to_index(q.question, json.loads(q.embedding), q.answer, q.reason, q.options)
+
+        return {"success": True, "saved_ids": saved_ids}
+
+    task_id = task_mgr.submit(_submit_exam, app=app, owner=str(uid))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 古诗词鉴赏模块 ===
 
@@ -251,16 +283,16 @@ def search_poetry():
     if not keyword:
         return jsonify({"success": False, "message": "关键词为空"})
 
-    # 1. 查库 (Exact or Fuzzy模糊匹配 Title 或 Author)
+    # 1. 查库 (Exact or Fuzzy 模糊匹配 Title 或 Author)
     poetry = Poetry.query.filter(or_(Poetry.title == keyword, Poetry.author == keyword)).first()
     if not poetry:
         poetry = Poetry.query.filter(or_(Poetry.title.like(f"%{keyword}%"), Poetry.author.like(f"%{keyword}%"))).first()
-    # 2. 如果库里有诗，检查是否有赏析
+    # 2. 如果库里有诗且有赏析 → 同步返回（毫秒级，无需异步）
     if poetry:
         analysis = PoetryAnalysis.query.filter_by(poetry_id=poetry.id).first()
         if analysis:
             return jsonify({
-                "success": True, 
+                "success": True,
                 "source": "database",
                 "data": {
                     "title": poetry.title,
@@ -272,35 +304,48 @@ def search_poetry():
                 }
             })
 
-    # 2. LLM 生成
-    gen = generate_poetry_analysis(keyword)
-    if not isinstance(gen, dict) or 'error' in gen or not gen.get('title') or not gen.get('content'):
-        return jsonify({"success": False, "message": "未找到相关诗词或解析失败"})
+    # 3. 需要 LLM 生成 → 提交到后台线程
+    app = current_app._get_current_object()
+    poetry_id = poetry.id if poetry else None
+    poetry_title = poetry.title if poetry else None
+    poetry_author = poetry.author if poetry else None
 
-    # 3. 入库 (Trust Gen Data)
-    if not poetry:
-        # 简单提取朝代
-        raw_auth = gen.get('author', '佚名')
-        dynasty, author = "", raw_auth
-        m = re.match(r'^\[(.*?)\]\s*(.*)', raw_auth)
-        if m: dynasty, author = m.groups()
-        
-        poetry = Poetry(title=gen.get('title', keyword), author=author, dynasty=dynasty, content=gen.get('content', ''))
-        db.session.add(poetry)
-        db.session.flush()
+    def _gen_poetry():
+        gen = generate_poetry_analysis(keyword)
+        if not isinstance(gen, dict) or 'error' in gen or not gen.get('title') or not gen.get('content'):
+            return {"success": False, "message": "未找到相关诗词或解析失败"}
 
-    analysis = PoetryAnalysis(
-        poetry_id=poetry.id,
-        translation=gen.get('translation', ''),
-        appreciation=gen.get('appreciation', ''),
-        annotations=json.dumps(gen.get('annotations', []), ensure_ascii=False),
-        title=poetry.title,
-        author=poetry.author
-    )
-    db.session.add(analysis)
-    db.session.commit()
+        # 入库
+        _poetry_id = poetry_id
+        _poetry_title = poetry_title
+        _poetry_author = poetry_author
+        if not _poetry_id:
+            raw_auth = gen.get('author', '佚名')
+            dynasty, author = "", raw_auth
+            m = re.match(r'^\[(.*?)\]\s*(.*)', raw_auth)
+            if m: dynasty, author = m.groups()
 
-    return jsonify({"success": True, "source": "llm", "data": gen})
+            new_poetry = Poetry(title=gen.get('title', keyword), author=author, dynasty=dynasty, content=gen.get('content', ''))
+            db.session.add(new_poetry)
+            db.session.flush()
+            _poetry_id = new_poetry.id
+            _poetry_title = new_poetry.title
+            _poetry_author = new_poetry.author
+
+        new_analysis = PoetryAnalysis(
+            poetry_id=_poetry_id,
+            translation=gen.get('translation', ''),
+            appreciation=gen.get('appreciation', ''),
+            annotations=json.dumps(gen.get('annotations', []), ensure_ascii=False),
+            title=_poetry_title,
+            author=_poetry_author
+        )
+        db.session.add(new_analysis)
+        db.session.commit()
+        return {"success": True, "source": "llm", "data": gen}
+
+    task_id = task_mgr.submit(_gen_poetry, app=app, owner=request.cookies.get('session', 'anon'))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 公式大全模块 ===
 
@@ -384,49 +429,47 @@ def explain_formula():
     """公式智能助教：讲解 & 出题"""
     from app.services.llm_service import generate_formula_content
     from app.services.answer_engine import save_question_to_db
-    
+
     data = request.json
     fid = data.get('id')
-    mode = data.get('type', 'explain') # explain or example
-    
-    if not fid: 
+    mode = data.get('type', 'explain')
+
+    if not fid:
         return jsonify({"success": False, "message": "Missing ID"})
-        
+
     formula = Formula.query.get(fid)
     if not formula:
         return jsonify({"success": False, "message": "Formula not found"})
-        
-    # 构造上下文
+
+    # 在 WSGI 线程中提取上下文（涉及 ORM），后台线程只做纯计算
     ctx = {
         "name": formula.name,
         "formula": formula.formula_text,
         "grade": formula.grade,
         "category": formula.category
     }
-    
-    # 调用 LLM
-    result = generate_formula_content(ctx, mode)
-    
-    if mode == 'example':
-        # 如果是生成例题，需要解析并入库
-        # result 应该是一个 JSON dict
-        if isinstance(result, dict):
-            # 存入题库
-            q_id = save_question_to_db(
-                question=result.get('question'),
-                answer=result.get('answer'),
-                reason=result.get('reason'),
-                options=result.get('options', []),
-                category=formula.category
-            )
-            # 返回给前端展示，并附带题库ID（方便后续可能的跳转）
-            return jsonify({"success": True, "data": result, "db_id": q_id})
+    formula_category = formula.category
+    app = current_app._get_current_object()
+
+    def _explain():
+        result = generate_formula_content(ctx, mode)
+        if mode == 'example':
+            if isinstance(result, dict):
+                q_id = save_question_to_db(
+                    question=result.get('question'),
+                    answer=result.get('answer'),
+                    reason=result.get('reason'),
+                    options=result.get('options', []),
+                    category=formula_category
+                )
+                return {"success": True, "data": result, "db_id": q_id}
+            else:
+                return {"success": False, "message": "生成格式错误"}
         else:
-            return jsonify({"success": False, "message": "生成格式错误"})
-            
-    else:
-        # 讲解模式，直接返回 Markdown 文本
-        return jsonify({"success": True, "data": result})
+            return {"success": True, "data": result}
+
+    task_id = task_mgr.submit(_explain, app=app, owner=request.cookies.get('session', 'anon'))
+    return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 单词消消乐 API ===
 @api_bp.route('/words', methods=['GET'])

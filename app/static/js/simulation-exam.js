@@ -44,22 +44,17 @@ const ExamApp = {
         document.getElementById('loadingMask').style.display = 'flex';
         
         try {
-            const res = await fetch('/api/simulation/generate', {
+            const data = await TaskPoller.submitAndPoll('/api/simulation/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    subject, grade, keypoint, count, types
-                })
+                body: JSON.stringify({ subject, grade, keypoint, count, types })
             });
-            const data = await res.json();
             
             if (data.success) {
                 this.currentQuestions = data.questions;
                 this.renderQuestions(data.questions);
-                // 切换视图
                 document.getElementById('filterSection').style.display = 'none';
                 document.getElementById('examArea').style.display = 'block';
-                // 滚动到顶部
                 window.scrollTo(0, 0);
             } else {
                 alert("生成失败: " + data.message);
@@ -247,12 +242,11 @@ const ExamApp = {
         
         // --- 2. 提交到后端保存 ---
         try {
-            const res = await fetch('/api/simulation/submit', {
+            const data = await TaskPoller.submitAndPoll('/api/simulation/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ results })
             });
-            const data = await res.json();
             
             if (data.success) {
                 const idMap = {};

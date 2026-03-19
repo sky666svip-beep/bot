@@ -12,18 +12,11 @@ const PoetrySearch = {
         document.getElementById('poetryResult').style.display = 'none';
 
         try {
-            // 3. 调用 API
-            const response = await fetch('/api/poetry/search', {
+            const result = await TaskPoller.submitAndPoll('/api/poetry/search', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    keyword: keyword
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword: keyword })
             });
-
-            const result = await response.json();
 
             if (result.success) {
                 PoetrySearch.render(result.data);

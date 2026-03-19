@@ -314,7 +314,7 @@ const FormulaManager = {
         `;
         
         try {
-            const res = await fetch('/api/formulas/explain', {
+            const json = await TaskPoller.submitAndPoll('/api/formulas/explain', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -322,7 +322,6 @@ const FormulaManager = {
                     type: type
                 })
             });
-            const json = await res.json();
             
             if (json.success) {
                 let htmlContent = '';

@@ -1,5 +1,6 @@
 /**
  * SearchEngine 模块：负责搜题核心逻辑
+ * 已适配异步任务轮询模式
  */
 const SearchEngine = {
     // 1. 文本搜题主逻辑
@@ -8,17 +9,14 @@ const SearchEngine = {
         if (!rawText) return alert("请输入题目内容或上传图片");
         this.updateStatus(true, "正在智能检索中...");
         try {
-            const response = await fetch('/api/search', {
+            const result = await TaskPoller.submitAndPoll('/api/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: rawText })
             });
-            const result = await response.json();
 
             if (result.success) {
-                // 渲染结果
                 this.displayResult(result.data);
-                // 如果仪表盘存在则刷新
                 if (typeof Dashboard !== 'undefined') Dashboard.loadData();
             } else {
                 alert("搜索失败: " + result.message);
@@ -93,16 +91,11 @@ const SearchEngine = {
         sourceBadge.className = data.source === '本地匹配' ? 'badge bg-success' : 'badge bg-primary';
 
         // 3. 错题本按钮逻辑
-        // 直接通过 index.html 里定义的 ID 获取按钮，确保能找到
         const starBtn = document.getElementById('toggleMistakeBtn');
         if (starBtn) {
-            // 给按钮赋予一个带 ID 的标识，方便 notebook.js 操作它
             starBtn.id = `mis-btn-${data.id}`;
-
-            // 绑定点击事件：调用 Notebook.toggleStatus
             starBtn.onclick = () => Notebook.toggleStatus(data.id, 'mistake');
 
-            // 初始化样式：如果是错题显示红色实心，否则显示灰色空心
             if (data.is_mistake) {
                 starBtn.className = "btn btn-sm btn-danger ms-2";
                 starBtn.innerHTML = '<i class="fas fa-star"></i>';
@@ -135,11 +128,11 @@ const SearchEngine = {
         this.updateStatus(true, "正在识别图片题目，请稍候...");
 
         try {
-            const response = await fetch('/api/solve-image', {
+            const result = await TaskPoller.submitAndPoll('/api/solve-image', {
                 method: 'POST',
                 body: formData
             });
-            const result = await response.json();
+
             const finalData = result.success ? result.data : result;
 
             if (finalData && finalData.answer) {
@@ -152,7 +145,7 @@ const SearchEngine = {
                     reason: finalData.reason || "暂无详细解析",
                     category: finalData.category || "其他",
                     source: finalData.source || "图片识别",
-                    is_mistake: finalData.is_mistake || false // 确保传递错题状态
+                    is_mistake: finalData.is_mistake || false
                 });
 
                 if (resultArea) resultArea.scrollIntoView({ behavior: 'smooth' });
@@ -184,17 +177,16 @@ const SearchEngine = {
         this.updateStatus(true, `正在深度解析文档: ${file.name}...`);
 
         try {
-            const response = await fetch('/api/upload-doc', {
+            const result = await TaskPoller.submitAndPoll('/api/upload-doc', {
                 method: 'POST',
                 body: formData
             });
-            const data = await response.json();
 
-            if (data.success) {
-                document.getElementById('rawText').value = data.full_text;
+            if (result.success) {
+                document.getElementById('rawText').value = result.full_text;
                 setTimeout(() => this.processAndSolve(), 800);
             } else {
-                alert("文档解析失败: " + data.message);
+                alert("文档解析失败: " + result.message);
             }
         } catch (error) {
             alert("文档服务异常");

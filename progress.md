@@ -53,4 +53,64 @@
   - [x] 兼容性验证：成功通过包含数值差异（1 vs 1.0）的边缘测试用例。
   - [x] 稳定性验证：AI 响应的 JSON 格式在各种异常输入下均能正确解析并返回。
 
+- **完成任务**：核心路由架构重构、严重性能瓶颈消除与安全性增强
+- **遇到的问题与解决方案**：
+  - **严重性能瓶颈：公式搜索矩阵未缓存**：现状：在 /formulas/search 中，每次用户搜索都会触发 formulas  = sql_query.all() 获取全表数据，然后遍历执行 json.loads(f.embedding)，最后构建 torch.tensor 计算相似度。这在数据量达到数千条后，会导致该接口响应极其缓慢并引发显存/内存抖动。
+    改进：效仿 NLPService 中的 _corpus_tensor，在应用启动时一次性加载所有公式的向量矩阵并驻留在显存 (GPU/内存) 中，搜索时直接进行张量运算。
+  - **慎用 ORDER BY RANDOM()**：现状：在 /words 和 /idioms/random 中使用了 order_by(func.random())。在 SQLite 或多数数据库中，这会引发全表扫描 (Full Table Scan) 并临时排序。如果词汇表达到 10 万级，这会成为灾难。
+    改进：先查出最大 ID，然后在 Python 层随机生成几个在区间内的 ID，使用 .filter(Idiom.id.in_(random_ids)) 进行精准抓取。
+  - **批量插入与批量向量化 (N+1 性能问题)**：现状：在 /simulation/submit 中，通过 for item in results: 循环内单条调用 save_question_to_db。由于每次调用都会计算一次 Embedding 并提交一次事务，这产生了严重的 N+1 性能问题。
+    改进：应提取所有问题文本，交给 nlp_engine 批量 .encode(texts)，再使用 db.session.bulk_save_objects 一次性入库。
+  - **安全性与鲁棒性加固**：
+    - 文件上传安全性漏洞
+    现状：/upload-doc 和 /solve-image 虽然通过 uuid 规避了文件名冲突和路径穿越，但完全没有校验文件拓展名类型。恶意用户可以上传 .sh 或 .exe 文件堆满服务器空间。
+    改进：添加严格的扩展名后缀和 MIME 类型校验（见下方补丁）。
+    - 缺乏统一全局异常处理
+    现状：目前许多路由没有 try...except 保护（如 /search, /solve）。一旦抛出异常（如数据库断连、数据格式不符），Flask 默认会返回 500 HTML 页面，破坏了前端的 JSON 解析。
+    改进：使用 @api_bp.errorhandler 全局拦截异常并包装为统一规范的 JSON 格式。
 
+- **技术实现细节**：
+  - **巨型单体路由拆分 (Blueprint Decomposition)**：将臃肿的 `routes.py` 拆分为职责明确的 `views.py` (纯页面渲染)、`api_search.py` (核心搜题引擎) 和通用杂项 API 工具。并同步修复了前端模板 (`index.html`) 的 `url_for` 页面引用错误与 `search-engine.js` 的异步请求 404 路径问题。
+  - **公式搜索显存常驻 (GPU/RAM Matrix Cache)**：在 `NLPService` 中拓展 `_formula_tensor`，在应用启动时一次性加载所有公式的向量矩阵并驻留显存。彻底解决了此前 `/formulas/search` 每次搜索都需要全表查询、实时 `json.loads` 构建张量带来的灾难性显存抖动与高延迟。
+  - **消除 N+1 性能灾难**：重构 `/simulation/submit` 模拟考试提交接口，提取文本交由模型进行 `batch_size` 批量向量化，并使用 `db.session.bulk_save_objects` 实施批量入库，最后增量热更新到内存索引中，大幅降低事务开销。
+  - **全表扫描 (Full Table Scan) 优化**：针对成语和单词随机获取接口 (`/words`, `/idioms/random`)，彻底摒弃低效的 `ORDER BY func.random()`。改为先查询 `max_id` 然后在 Python 层生成随机数列表，通过 `IN` 条件精准命中，保障在十万级词库量下也能达到毫秒级响应。
+  - **安全性与鲁棒性加固**：针对文档与图片上传增加严格的文件扩展名校验 (`ALLOWED_IMAGE_EXTS` 等)，防止恶意脚本上传满载服务器；在 `api_bp` 新增全局 `errorhandler` 统一拦截异常并包装为标准 JSON 格式，防止前端解析 Flask 默认的 500 HTML 报错页面而导致程序崩溃。
+- **验证结果**：
+  - [x] 架构解耦：蓝图路径注册正常，前后端全链路通信畅通。
+  - [x] 性能飞跃：公式检索实现了毫秒级响应；批量模拟试题提交不会再引发服务器线程阻塞。
+  - [x] 安全性提升：非法文件类型上传请求被成功阻截。
+
+## 2026-03-19
+- **完成任务**：解决 WSGI 线程被同步 LLM 调用和 PDF 解析阻塞导致 502/504 的问题
+- **技术实现细节**：
+    - **设计思路**：使用 Python 标准库 `ThreadPoolExecutor` 作为进程内后台线程池，将重 I/O 操作卸载到后台线程，WSGI 线程仅负责「提交任务」和「查询结果」两个毫秒级操作，前端改为轮询模式获取结果。
+    - **核心变更**：
+        - `app/services/async_task.py`：新建进程内异步任务管理器（全局单例），基于 `ThreadPoolExecutor(max_workers=4)` + `threading.Lock` 保护的状态字典。支持 Flask app 上下文注入、结果 TTL 5 分钟自动清理。
+        - `app/api/routes.py`：改造 7 个阻塞接口（`/upload-doc`、`/essay/correct`、`/ocr-image`、`/study-plan/generate`、`/simulation/generate`、`/poetry/search`、`/formulas/explain`）为异步提交模式。新增 `/task/<task_id>/status` 通用轮询端点。
+        - `app/api/api_search.py`：改造 3 个阻塞接口（`/search`、`/solve`、`/solve-image`）为异步提交模式。
+        - `app/static/js/poll-helper.js`：新建前端通用轮询辅助模块，提供 `TaskPoller.poll()` 和 `TaskPoller.submitAndPoll()` 两个方法。
+        - `search-engine.js`、`essay.js`、`poetry.js`、`study_plan.js`、`simulation-exam.js`、`formulas.js`：将所有 `fetch()` 调用替换为 `TaskPoller.submitAndPoll()`。
+        - 6 个 HTML 模板：添加 `poll-helper.js` 脚本引用。
+- **遇到的问题与解决方案**（必填，若顺畅则写 无）：
+    - **Bug现象**：`/solve-image` 和 `/ocr-image` 涉及临时文件管理，文件清理需在后台任务完成后执行
+    - **原因分析**：原代码在 WSGI 线程的 `finally` 块中删除临时文件，但异步化后 WSGI 线程已提前返回
+    - **解决办法**：将文件清理逻辑移入后台线程闭包的 `finally` 块中，确保处理完成后再删除
+- **验证结果**（所有测试脚本保存至 d:\Projects\choicebot\test 目录下）：
+    - [x] 通过验证：`test/run_async_test.py` 全部 10/10 断言通过（提交/轮询、异常处理、并发、状态流转、app 上下文注入）
+- **附注**：
+    - 线程池设为 4 个 worker，与 Waitress 的 8 个 WSGI 线程分离，不争抢资源
+    - 对于 `/poetry/search` 等接口，数据库命中时仍同步返回（毫秒级），仅 LLM 生成路径走异步
+
+- **完成任务**：异步引擎安全与健壮性二次修复
+- **技术实现细节**：
+    - **设计思路**：针对第一版遗留的 5 个安全/健壮性问题逐项修复
+    - **核心变更**：
+        - `async_task.py`：(1) `db.session.remove()` 清理线程级 session 防止连接泄漏；(2) `Semaphore(64)` 任务队列背压保护，超限拒绝；(3) `secrets.token_hex(16)` 生成 32 字符加密级 task_id；(4) `owner` 参数支持归属校验
+        - `routes.py`：轮询端点增加 owner 鉴权；`/simulation/submit`（model.encode 阻塞）异步化；所有 submit 调用绑定 owner
+        - `api_search.py`：所有 submit 调用绑定 owner
+        - `poll-helper.js`：固定间隔改为指数退避（800ms→×1.5→max 6s）
+        - `simulation-exam.js`：submit 接口适配轮询
+- **遇到的问题与解决方案**：无
+- **验证结果**（所有测试脚本保存至 d:\Projects\choicebot\test 目录下）：
+    - [x] 通过验证：`test/run_async_test.py` v2 全部 15/15 断言通过（含 task_id 安全性、owner 鉴权、队列背压）
+- **附注**：无
