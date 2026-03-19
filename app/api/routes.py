@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify, current_app
 from docx import Document
 from sqlalchemy import func, or_
 from werkzeug.exceptions import HTTPException
+from werkzeug.utils import secure_filename
 from app.models import UserHistory, QuestionBank, Poetry, PoetryAnalysis, Formula, Vocabulary, Idiom
 from app.extensions import db
 from app.services.llm_service import extract_text_from_image, analyze_essay, generate_study_plan, generate_exam_questions, generate_poetry_analysis
@@ -16,11 +17,15 @@ from flask_login import login_required, current_user
 
 api_bp = Blueprint('api', __name__)
 
+def _get_owner():
+    """统一的 owner 标识：登录用户用 ID，未登录用 session cookie"""
+    return str(current_user.id) if current_user.is_authenticated else request.cookies.get('session', 'anon')
+
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # 安全配置：允许的文件后缀
-ALLOWED_IMAGE_EXTS = {'png', 'jpg', 'jpeg', 'webp', 'bmp'}
+ALLOWED_IMAGE_EXTS = {'png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif','tiff','tif'}
 ALLOWED_DOC_EXTS = {'pdf', 'docx', 'txt'}
 
 def allowed_file(filename, allowed_set):
@@ -37,9 +42,7 @@ def handle_global_error(e):
 @api_bp.route('/task/<task_id>/status', methods=['GET'])
 def poll_task(task_id):
     """查询异步任务状态，毫秒级响应，不占线程资源"""
-    # 传入当前用户 ID 做权限校验，未登录用 session ID
-    owner = str(current_user.id) if current_user.is_authenticated else request.cookies.get('session', 'anon')
-    return jsonify(task_mgr.get_status(task_id, owner=owner))
+    return jsonify(task_mgr.get_status(task_id, owner=_get_owner()))
 
 # 历史记录路由
 @api_bp.route('/history', methods=['GET'])
@@ -84,9 +87,12 @@ def upload_document():
     if not allowed_file(file.filename, ALLOWED_DOC_EXTS):
         return jsonify({"success": False, "message": "不支持的文件格式"}), 400
 
-    temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4()}_{file.filename}")
+    # 1. 使用 secure_filename 清洗文件名，防止路径穿越漏洞
+    safe_filename = secure_filename(file.filename) or "unnamed_document.tmp"
+    
+    temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4()}_{safe_filename}")
     file.save(temp_path)
-    ext = file.filename.lower().split('.')[-1]
+    ext = safe_filename.lower().split('.')[-1]
 
     def _parse_doc():
         """后台线程：解析文档"""
@@ -114,7 +120,7 @@ def upload_document():
         finally:
             if os.path.exists(temp_path): os.remove(temp_path)
 
-    task_id = task_mgr.submit(_parse_doc, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_parse_doc, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
 
 @api_bp.route('/dashboard', methods=['GET'])
@@ -148,7 +154,7 @@ def correct_essay_api():
         result = analyze_essay(text, essay_type)
         return {"success": True, "data": result}
 
-    task_id = task_mgr.submit(_correct, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_correct, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 纯文字识别 API (供作文拍照批改使用) ===
@@ -168,7 +174,7 @@ def ocr_image_api():
         finally:
             if os.path.exists(temp_path): os.remove(temp_path)
 
-    task_id = task_mgr.submit(_ocr, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_ocr, owner=_get_owner())
     return jsonify({'success': True, 'task_id': task_id}), 202
 
 # === 学习计划板块 ===
@@ -182,7 +188,7 @@ def generate_plan_api():
     def _gen_plan():
         return {"success": True, "data": generate_study_plan(data)}
 
-    task_id = task_mgr.submit(_gen_plan, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_gen_plan, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
 
 @api_bp.route('/study-plan/weakness-analysis', methods=['GET'])
@@ -213,7 +219,7 @@ def generate_simulation_api():
     def _gen_exam():
         return {"success": True, "questions": generate_exam_questions(criteria)}
 
-    task_id = task_mgr.submit(_gen_exam, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_gen_exam, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
 
 @api_bp.route('/simulation/submit', methods=['POST'])
@@ -344,7 +350,7 @@ def search_poetry():
         db.session.commit()
         return {"success": True, "source": "llm", "data": gen}
 
-    task_id = task_mgr.submit(_gen_poetry, app=app, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_gen_poetry, app=app, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 公式大全模块 ===
@@ -468,7 +474,7 @@ def explain_formula():
         else:
             return {"success": True, "data": result}
 
-    task_id = task_mgr.submit(_explain, app=app, owner=request.cookies.get('session', 'anon'))
+    task_id = task_mgr.submit(_explain, app=app, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
 
 # === 单词消消乐 API ===

@@ -114,3 +114,17 @@
 - **验证结果**（所有测试脚本保存至 d:\Projects\choicebot\test 目录下）：
     - [x] 通过验证：`test/run_async_test.py` v2 全部 15/15 断言通过（含 task_id 安全性、owner 鉴权、队列背压）
 - **附注**：无
+
+- **完成任务**：修复异步任务轮询返回「任务不存在」的严重 bug
+- **技术实现细节**：
+    - **设计思路**：统一 submit / poll 两侧的 owner 标识计算逻辑
+    - **核心变更**：
+        - `routes.py`：新增 `_get_owner()` 辅助函数（`str(current_user.id) if authenticated else session cookie`），poll 端点和全部 7 个 submit 调用均改用此函数
+    - **根因**：submit 端使用 `request.cookies.get('session', 'anon')` 作为 owner（值如 `"eyJ..."`），而 poll 端使用 `str(current_user.id)`（值如 `"42"`）。已登录用户两侧值不一致 → `get_status` 权限校验失败 → 返回 `not_found`
+- **遇到的问题与解决方案**：
+    - **Bug现象**：所有异步化接口在登录状态下轮询均返回「任务不存在」
+    - **原因分析**：submit 和 poll 使用了不同的 owner 计算公式
+    - **解决办法**：抽取 `_get_owner()` 辅助函数，消除不一致
+- **验证结果**：
+    - [x] 通过验证：`test/run_async_test.py` 15/15 断言通过
+

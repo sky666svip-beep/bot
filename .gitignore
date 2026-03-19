@@ -10,6 +10,12 @@ model_cache_*/
 instance/
 /llama-cuda
 /Qwen3-Reranker-0.6B
+1.html
+Biology.html
+Chemistry.html
+Geography.html
+function.html
+Major_historical_events.html
 # IDE/编辑器配置
 .idea/
 .vscode/

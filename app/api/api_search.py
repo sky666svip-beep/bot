@@ -1,6 +1,8 @@
 import os
 import uuid
 from flask import Blueprint, request, jsonify, current_app
+from werkzeug.utils import secure_filename
+import filetype
 from app.models import UserHistory
 from app.extensions import db
 from app.services.answer_engine import solve_pipeline
@@ -71,12 +73,23 @@ def solve_image():
     """视觉路由：图片搜题 (Vision ML)"""
     file = request.files.get('file')
     if not file or not file.filename:
-        return jsonify({'error': '无效图片文件'}), 400
+        return jsonify({'success': False, 'message': '无效图片文件'}), 400
     if not allowed_file(file.filename, ALLOWED_IMAGE_EXTS):
-        return jsonify({'error': '不支持的图片格式'}), 400
+        return jsonify({'success': False, 'message': '不支持的图片格式'}), 400
 
-    temp_path = os.path.join(UPLOAD_FOLDER, f"vision_{uuid.uuid4()}.jpg")
+    # 安全提取原文件的真实后缀，防止统统保存为 .jpg 导致图片库解析报错
+    safe_filename = secure_filename(file.filename) or "unnamed.jpg"
+    ext = safe_filename.lower().split('.')[-1]
+    
+    temp_path = os.path.join(UPLOAD_FOLDER, f"vision_{uuid.uuid4()}.{ext}")
     file.save(temp_path)
+
+    # 嗅探文件真实的 Magic Number，拦截伪装后缀的恶意文件
+    kind = filetype.guess(temp_path)
+    if kind is None or kind.extension not in ALLOWED_IMAGE_EXTS:
+        os.remove(temp_path)
+        return jsonify({'success': False, 'message': '伪装的图片文件已被拦截'}), 400
+
     uid = current_user.id
     app = current_app._get_current_object()
 

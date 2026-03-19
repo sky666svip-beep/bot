@@ -43,3 +43,14 @@ def idiom_detail_page(id):
 
 @page_bp.route('/Major_historical_events')
 def Major_historical_events_page(): return render_template('Major_historical_events.html')
+
+@page_bp.route('/Biology')
+def Biology_page(): return render_template('Biology.html')
+
+@page_bp.route('/Chemistry')
+def Chemistry_page(): return render_template('Chemistry.html')
+
+@page_bp.route('/Geography')
+def Geography_page(): return render_template('Geography.html')
+@page_bp.route('/function')
+def function_page(): return render_template('function.html')
