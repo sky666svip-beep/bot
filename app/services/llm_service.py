@@ -52,6 +52,7 @@ def _call_qwen_json(prompt, system_role="你是一个严谨的助手，只输出
                     {"role": "system", "content": system_role},
                     {"role": "user", "content": prompt}
                 ],
+                extra_body={"enable_thinking":False},
                 response_format={"type": "json_object"},
                 temperature=0.1
             )
@@ -234,8 +235,7 @@ def generate_poetry_analysis(keyword):
         "annotations": [ {{ "word": "...", "note": "..." }} ] 
     }}
     """
-    # 古诗深度赏析需要较强的长文本推理和结构化输出能力，轻量级模型容易出现截断或字段丢失，这里显式指定使用 qwen-plus
-    result = _call_qwen_json(prompt, system_role="古诗词鉴赏专家", model="qwen3.5-plus")
+    result = _call_qwen_json(prompt, system_role="古诗词鉴赏专家")
     if not isinstance(result, dict) or not result.get('title') or not result.get('content'):
         return {}
     return result
