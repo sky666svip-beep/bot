@@ -1,11 +1,12 @@
 import os
 import uuid
+import logging
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import filetype
 from app.models import UserHistory
 from app.extensions import db
-from app.services.answer_engine import solve_pipeline
+from app.services.answer_engine import solve_pipeline, save_question_to_db, save_to_history
 from app.services.llm_service import solve_with_vision
 from app.services.async_task import task_mgr
 from flask_login import login_required, current_user
@@ -96,24 +97,39 @@ def solve_image():
     def _solve_img():
         try:
             ai_res = solve_with_vision(temp_path)
-            # 入库
-            history = UserHistory(
-                question="[图片搜题]",
-                answer=ai_res.get('answer', '未识别出答案'),
-                reason=ai_res.get('reason', '无解析'),
-                source="图片搜题",
-                category=ai_res.get('category', '其他'),
-                user_id=uid
+            # 提取识别出的题目文本
+            question_text = ai_res.get('question', '[图片搜题]')
+            ai_answer = ai_res.get('answer', '未识别出答案')
+            ai_reason = ai_res.get('reason', '无解析')
+            ai_category = ai_res.get('category', '其他')
+
+            # 入库 QuestionBank（去重+向量索引），与文本搜题一致
+            qb_id = save_question_to_db(
+                question=question_text,
+                answer=ai_answer,
+                reason=ai_reason,
+                category=ai_category
             )
-            db.session.add(history)
+            # 入库 UserHistory
+            save_to_history(question_text, ai_answer, ai_reason, '图片搜题', ai_category, user_id=uid)
             db.session.commit()
+
+            # 查最新 history 记录获取 id 和 is_mistake
+            last_rec = UserHistory.query.filter_by(user_id=uid, question=question_text) \
+                .order_by(UserHistory.id.desc()).first()
+
             return {
-                'id': history.id,
-                'answer': history.answer,
-                'reason': history.reason,
-                'category': history.category,
-                'source': '图片搜题'
+                'id': last_rec.id if last_rec else None,
+                'question': question_text,
+                'answer': ai_answer,
+                'reason': ai_reason,
+                'category': ai_category,
+                'source': '图片搜题',
+                'is_mistake': last_rec.is_mistake if last_rec else False
             }
+        except Exception as e:
+            logging.error(f"❌ [图片搜题] 异常: {e}", exc_info=True)
+            raise
         finally:
             if os.path.exists(temp_path): os.remove(temp_path)
 

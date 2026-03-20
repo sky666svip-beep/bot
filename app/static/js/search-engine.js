@@ -136,6 +136,10 @@ const SearchEngine = {
             const finalData = result.success ? result.data : result;
 
             if (finalData && finalData.answer) {
+                // 将识别出的题目回填到输入框
+                const rawText = document.getElementById('rawText');
+                if (rawText && finalData.question) rawText.value = finalData.question;
+
                 const resultArea = document.getElementById('resultArea');
                 if (resultArea) resultArea.style.display = 'block';
 

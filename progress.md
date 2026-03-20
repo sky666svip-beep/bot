@@ -128,3 +128,20 @@
 - **验证结果**：
     - [x] 通过验证：`test/run_async_test.py` 15/15 断言通过
 
+## 2026-03-20
+- **完成任务**：图片搜题对齐文本搜题逻辑，支持识别题目文本并统一入库，修复主页错题本侧边栏被分类按钮遮挡的层叠问题
+- **技术实现细节**：
+    - **设计思路**：图片搜题原本只返回答案和解析，题目硬编码为 `[图片搜题]` 且不入 `QuestionBank`。现让 Vision LLM 同时返回 `question` 字段，后端复用文本搜题的入库链路。原分类按钮容器 `.category-nav-container` 的 `z-index` 被设为 `1050`，高于 Bootstrap Offcanvas 默认的 `1045`，导致侧边栏触发时底部内容穿透遮挡。将其下调至 `100` 恢复正常的 DOM 堆叠逻辑。
+    - **核心变更**：
+        - `llm_service.py`：`solve_with_vision` 的 prompt 增加 `question` 字段要求，让 LLM 输出识别出的完整题目原文
+        - `api_search.py`：`_solve_img` 重写，提取 `question` 字段后调用 `save_question_to_db`（入 QuestionBank，含去重+向量索引）和 `save_to_history`（入 UserHistory），与文本搜题行为完全一致。返回数据增加 `question` 和 `is_mistake` 字段
+        - `search-engine.js`：`handleImageUpload` 识别成功后将题目文本回填到 `rawText` 输入框
+        - `app/static/css/style.css`：将 `.category-nav-container` 的 `z-index: 1050` 修改为 `z-index: 100`。
+- **遇到的问题与解决方案**：
+ - **Bug现象**：主页打开左侧错题本抽屉时，分类模块层叠在侧边栏上方，导致阅读与交互受阻。
+    - **原因分析**：容器元素的 `z-index` 设置不合理（`1050` 等同于模态框层级）。
+    - **解决办法**：下调至 `100`。
+- **验证结果**：
+    - [x] 上传图片 → 确认输入框回填题目、结果正常、数据库 question_bank 和 user_history 均有正确记录
+- **附注**：无
+
