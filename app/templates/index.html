@@ -298,12 +298,8 @@
 	<script src="{{ url_for('static', filename='js/search-engine.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/notebook.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 	<script>
-		// 初始化
-		document.addEventListener('DOMContentLoaded', () => {
-		    Dashboard.init();
-		    Notebook.init();
-		});
 		window.MathJax = {
 		        tex: {
 		            inlineMath: [['$', '$'], ['\\(', '\\)']],

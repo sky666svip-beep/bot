@@ -62,12 +62,12 @@ const UIEffects = {
             }, duration * 1000);
         };
         const fragment = document.createDocumentFragment();
-        for (let i = 0; i < 8; i++) { // 初始数量
+        for (let i = 0; i < 10; i++) { // 初始数量
             createSakura(true, fragment);
         }
         container.appendChild(fragment);
 
-        setInterval(() => createSakura(false), 4000); // 频率降低
+        setInterval(() => createSakura(false), 3000); // 频率降低
     }
 };
 
