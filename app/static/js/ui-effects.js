@@ -67,7 +67,7 @@ const UIEffects = {
         }
         container.appendChild(fragment);
 
-        setInterval(() => createSakura(false), 3000); // 频率降低
+        setInterval(() => createSakura(false), 3500); // 频率降低
     }
 };
 

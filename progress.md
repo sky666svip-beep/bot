@@ -174,3 +174,16 @@
 - **验证结果**：
     - [x] 通过验证：功能正常，ID 成功传递给后端 API，语法错误消失。
 - **附注**：无
+
+## 2026-03-27
+- **完成任务**：将 `dashboard.js` 合并至 `app.js` 并精简了 `index.html` 的引用。
+- **技术实现细节**：
+    - **设计思路**：为了减少前端 HTTP 请求数量并整合入口逻辑，将 `Dashboard` 模块代码迁移至 `app.js`。
+    - **核心变更**：
+        - `app/static/js/app.js`：集成 `Dashboard` 定义，并在 `DOMContentLoaded` 中统一初始化。
+        - `app/templates/index.html`：移除已合并脚本的引用。
+        - `app/static/js/dashboard.js`：已物理删除。
+- **遇到的问题与解决方案**：无
+- **验证结果**：
+    - [x] 通过验证：首页图表（饼图、热力图）加载正常，交互逻辑连贯。
+- **附注**：无
