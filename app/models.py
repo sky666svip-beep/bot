@@ -172,9 +172,8 @@ class UserHistory(db.Model):
             'time': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
 
-    # app/models.py (追加)
 
-    # === 4. [新增] 公式大全表 ===
+    # === 4. 公式大全表 ===
 class Formula(db.Model):
         """
         公式大全表：支持语义检索和 LLM 讲解
@@ -182,7 +181,6 @@ class Formula(db.Model):
         __tablename__ = 'formulas'
 
         id = db.Column(db.Integer, primary_key=True)
-        # [DELETE] code 字段已移除
         name = db.Column(db.String(100), nullable=False, index=True)  # 例如: 勾股定理
 
         # 分类
@@ -201,8 +199,6 @@ class Formula(db.Model):
         conditions = db.Column(db.Text)  # 适用条件
         notes = db.Column(db.Text)  # 公式备注
         derivation = db.Column(db.Text)  # 推导过程
-
-
         # 核心：语义向量
         embedding = db.Column(db.Text)
 
@@ -222,7 +218,7 @@ class Formula(db.Model):
                 'tags': json.loads(self.tags) if self.tags else [],
             }
 
-# === 5. [新增] 单词表 (映射现有表) ===
+# === 5. 单词表 (映射现有表) ===
 class Vocabulary(db.Model):
     """
     单词表：映射现有 vocabulary 表
@@ -242,7 +238,7 @@ class Vocabulary(db.Model):
             'definition': self.definition
         }
 
-# === 6. [新增] 成语表 (映射现有表) ===
+# === 6. 成语表 (映射现有表) ===
 class Idiom(db.Model):
     """
     成语表：成语 PK 数据来源

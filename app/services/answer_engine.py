@@ -56,8 +56,6 @@ def fast_db_lookup(question_text, std_query=None):
     if not std_query:
         return None
 
-    # print(f"⚡ [极速检索] 查询指纹: {std_query[:30]}...")
-
     # 2. 数据库精确查询
     match = QuestionBank.query.filter_by(std_q=std_query).first()
 

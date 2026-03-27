@@ -226,7 +226,7 @@ class NLPService:
                         metadata.append({
                             "id": q.id,
                             "question": q.question,
-                            "std_q": q.std_q,
+                            "std_q": q.std_q if q.std_q else self.standardize_text(q.question),
                             "answer": q.answer,
                             "options": q.options,
                             "reason": q.reason

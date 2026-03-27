@@ -383,11 +383,13 @@ function showFullDetail(item) {
         if (window.MathJax) MathJax.typesetPromise([modalBody]);
     }, 100);
 }
+</script>
 
 {% if current_user.is_authenticated %}
-document.addEventListener('DOMContentLoaded', loadHistory);
-{% endif %}
+<script>
+    document.addEventListener('DOMContentLoaded', loadHistory);
 </script>
+{% endif %}
 
 </body>
 </html>

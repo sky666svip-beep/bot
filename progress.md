@@ -159,3 +159,18 @@
 - **验证结果**：
     - [x] 通过验证：功能代码解耦完成，前端复制等交互恢复正常且无重复初始化问题。
 - **附注**：无
+
+## 2026-03-27
+- **完成任务**：修复了 `history.html` 和 `idiom_detail.html` 中因 Jinja2 标签导致的前端语法错误提示。
+- **技术实现细节**：
+    - **设计思路**：为了消除 IDE 对 JavaScript 块内 Jinja2 语法的解析错误，通过将数据注入 `body` 的 `dataset` 或将控制逻辑移出 `<script>` 标签的方式来实现服务器端到客户端的数据/逻辑传递，确保脚本内容的合法性。
+    - **核心变更**：
+        - `app/templates/history.html`：拆分脚本块，移动认证状态检查逻辑。
+        - `app/templates/idiom_detail.html`：将 `idiom_id` 的传递方式改为通过 `document.body.dataset` 获取。
+- **遇到的问题与解决方案**：
+    - **Bug现象**：IDE 报错 "Property assignment expected"、"Expression expected" 等。
+    - **原因分析**：Jinja2 的 `{{ ... }}` 和 `{% ... %}` 语法在 JS 环境中具有不同的语义（如对象字面量、模数运算等），导致解析冲突。
+    - **解决办法**：物理隔离 Jinja2 语法与 JavaScript 代码。
+- **验证结果**：
+    - [x] 通过验证：功能正常，ID 成功传递给后端 API，语法错误消失。
+- **附注**：无

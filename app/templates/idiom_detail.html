@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/idiom.css') }}">
 </head>
-<body class="min-h-screen relative text-gray-800 pb-10">
+<body class="min-h-screen relative text-gray-800 pb-10" data-idiom-id="{{ idiom_id }}">
 
     <!-- 顶部导航栏 -->
     <nav class="fixed-top-nav h-[60px] bg-white/80 backdrop-blur-md border-b border-amber-200 flex items-center justify-between px-4 shadow-sm">
@@ -86,7 +86,7 @@
     </main>
 
     <script>
-        const idiomId = {{ idiom_id|tojson }};
+        const idiomId = document.body.dataset.idiomId;
         let currentIdiomWord = '';
 
         document.addEventListener('DOMContentLoaded', () => {
