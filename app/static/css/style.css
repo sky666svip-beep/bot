@@ -571,7 +571,7 @@ body::before {
 
 /* 辅助类 */
 .text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.gradient-text { background: linear-gradient(45deg, #0d6efd, #6610f2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.gradient-text { background: linear-gradient(45deg, #0d6efd, #12aa9ca2); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 .mjx-container { margin: 0 !important; display: inline-block !important; }
 
