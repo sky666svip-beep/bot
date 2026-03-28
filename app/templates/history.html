@@ -149,7 +149,7 @@
         </div>
         <h4 class="text-secondary fw-bold mb-3">登录账号解锁更多内容</h4>
         <p class="text-muted mb-4 small">登录后可查看所有的答题历史与解析</p>
-        <a href="{{ url_for('auth.login') }}" class="btn btn-primary rounded-pill px-5 py-2 shadow-sm">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-success rounded-pill px-5 py-2 shadow-sm">
             立即登录 <i class="fas fa-arrow-right ms-2"></i>
         </a>
     </div>
@@ -315,7 +315,7 @@ function renderCards(data) {
 
                 <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                     <span class="badge bg-light text-secondary">${item.source || 'AI识别'}</span>
-                    <button class="btn btn-primary btn-sm rounded-pill px-3" onclick='showFullDetail(${safeItem})'>
+                    <button class="btn btn-secondary btn-sm rounded-pill px-3" onclick='showFullDetail(${safeItem})'>
                         查看详情
                     </button>
                 </div>

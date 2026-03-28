@@ -3,14 +3,13 @@
 /* === 1. 全局主题变量系统 (五色渐变) === */
 :root {
     /* 五色渐变背景色 */
-    --bg-gradient: linear-gradient(
-  135deg,
-  rgba(243, 232, 255, 0.5) 0%,    
-  rgba(224, 231, 255, 0.5) 25%,   
-  rgba(219, 234, 254, 0.5) 50%,   
-  rgba(224, 242, 254, 0.5) 75%,   
-  rgba(240, 249, 255, 0.5) 100%   
-);
+    --bg-gradient: linear-gradient(135deg, 
+    rgba(255, 252, 245, 0.65) 0%,  /* 淡蜜瓜白 */
+    rgba(247, 252, 245, 0.65) 25%, /* 极浅青柠绿 */
+    rgba(238, 248, 245, 0.65) 50%, /* 清透浅青 */
+    rgba(242, 250, 247, 0.65) 75%, /* 柔和青白 */
+    rgba(250, 253, 251, 0.65) 100%);/* 浅白收尾 */
+
     --bg-color: transparent;
     --text-primary: #2c3e50;
     --text-secondary: #64748b;
@@ -149,18 +148,18 @@ textarea.form-control {
 
 /* === 6. 核心按钮 - 五色渐变风格 === */
 .btn-submit {
-    background: linear-gradient(135deg, #a855f7 0%, #6366f1 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%);
+    background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 25%, #bfdbfe 50%, #a5f3fc 75%, #99f6e4 100%);
     color: #fff;
     border: none;
     border-radius: 8px;
     padding: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 15px rgba(123, 124, 209, 0.2);
     transition: var(--transition-base);
 }
 .btn-submit:hover {
-    background: linear-gradient(135deg, #9333ea 0%, #4f46e5 25%, #2563eb 50%, #0284c7 75%, #0891b2 100%);
+    background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 25%, #bfdbfe 50%, #a5f3fc 75%, #99f6e4 100%);
     transform: scale(1.02);
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
     color: #fff;

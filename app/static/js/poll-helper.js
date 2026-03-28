@@ -9,13 +9,13 @@ const TaskPoller = {
      * @param {object} opts    - 可选配置
      * @param {number} opts.initInterval - 首次轮询间隔，默认 800ms
      * @param {number} opts.maxInterval  - 最大轮询间隔，默认 6000ms
-     * @param {number} opts.timeout      - 超时时间，默认 90s
+     * @param {number} opts.timeout      - 超时时间，默认 80s
      * @returns {Promise<any>} 任务结果
      */
     async poll(taskId, opts = {}) {
         const initInterval = opts.initInterval || 800;
         const maxInterval = opts.maxInterval || 6000;
-        const timeout = opts.timeout || 90000;
+        const timeout = opts.timeout || 80000;
         const start = Date.now();
         let interval = initInterval;
 

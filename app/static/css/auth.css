@@ -1,20 +1,28 @@
 /* app/static/css/auth.css */
 :root {
-  --gradient-soft-blue-purple: linear-gradient(135deg, 
-    rgba(243, 232, 255, 0.55) 0%,
-    rgba(224, 231, 255, 0.55) 25%,
-    rgba(219, 234, 254, 0.55) 50%,
-    rgba(224, 242, 254, 0.55) 75%,
-    rgba(240, 249, 255, 0.55) 100%);
+  /* 活力橙渐变背景（保留135deg角度+0.65透明度，色调统一为暖橙系） */
+  --gradient-bg: linear-gradient(
+    110deg,
+    hsl(170deg 70% 68%),
+    hsl(202, 100%, 78%),
+    rgb(200, 205, 235),
+    rgb(205, 195, 235),
+    rgb(225, 195, 220),
+    rgb(248, 205, 180)
+  );
+  --primary-color: #fc5531;        /* 主色：活力橙 */
+  --primary-color-hover: #d94426;  /*  hover深色：深活力橙（交互更有层次） */
+  --primary-glow: rgba(252, 85, 49, 0.4); /* 活力橙发光效果 */
 }
 
 body {
-    background-color: #f8fafc;
+    background: var(--gradient-bg), #fff; /* backdrop fallback since it's 0.65 opacity */
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0;
 }
 
 .auth-card {
@@ -26,7 +34,7 @@ body {
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 10px 40px rgba(215, 166, 133, 0.15);
     
     position: relative;
     z-index: 10;
@@ -38,10 +46,10 @@ body {
 }
 
 .auth-title {
-    font-size: 1.75rem;
+    font-size: 2.45rem;
     font-weight: 800;
     margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #fc5531 0%, #f58220 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -49,7 +57,7 @@ body {
 
 .auth-subtitle {
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
 }
 
 .form-control {
@@ -62,8 +70,8 @@ body {
 
 .form-control:focus {
     background: #fff;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(120, 194, 178, 0.15);
 }
 
 .btn-auth {
@@ -72,15 +80,15 @@ body {
     border-radius: 12px;
     font-weight: 600;
     border: none;
-    background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-hover) 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    transition: transform 0.2s;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.65) ;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .btn-auth:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 6px 16px var(--primary-glow);
 }
 
 .auth-footer {
@@ -91,13 +99,14 @@ body {
 }
 
 .auth-footer a {
-    color: #3b82f6;
+    color: var(--primary-color-hover);
     text-decoration: none;
     font-weight: 600;
 }
 
 .auth-footer a:hover {
     text-decoration: underline;
+    color: #fc5531;
 }
 
 .bg-blob {
@@ -114,7 +123,7 @@ body {
     height: 300px;
     top: -50px;
     left: -50px;
-    background: #e9d5ff;
+    background: var(--gradient-bg);
 }
 
 .blob-2 {
@@ -122,7 +131,7 @@ body {
     height: 350px;
     bottom: -50px;
     right: -50px;
-    background: #bfdbfe;
+    background: var(--gradient-bg)
     animation-delay: -3s;
 }
 

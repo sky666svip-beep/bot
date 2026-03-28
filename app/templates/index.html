@@ -7,7 +7,7 @@
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.0">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
@@ -38,7 +38,7 @@
 		<div class="row justify-content-center">
 			<div class="col-lg-9 col-md-11">
 				<div class="text-center mb-5 mt-4 space-y-3 slide-in">
-					<h1 class="redesign-header-title"> 智能答题助手 </h1>
+					<h1 class="redesign-header-title"> 智慧答题助手 </h1>
 					<p class="redesign-header-subtitle"> 机器学习赋能 · 多模态融合学习引擎 </p>
 				</div>
 				<div class="card main-card p-5 mb-4 slide-in " style="margin-top: -35px;">
@@ -273,7 +273,7 @@
 						</div>
 						<h5 class="text-muted mb-3 fw-bold">登录账号解锁更多内容</h5>
 						<p class="text-secondary small mb-4">查看更多学习记录</p>
-						<a href="{{ url_for('auth.login') }}" class="btn btn-primary rounded-pill px-4 shadow-sm"> 立即登录 <i class="fas fa-arrow-right ms-2"></i>
+						<a href="{{ url_for('auth.login') }}" class="btn btn-success rounded-pill px-4 shadow-sm"> 立即登录 <i class="fas fa-arrow-right ms-2"></i>
 						</a>
 					</div>
 				</div>

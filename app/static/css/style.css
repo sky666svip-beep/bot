@@ -410,7 +410,7 @@ body::before {
 /* 公式手册按钮 */
 .btn-formula-gradient {
     background: transparent;
-    color: #8A94E8!important;
+    color: #8A94E8;
     border: 2px solid #8A94E8;
 }
 .btn-formula-gradient:hover {
@@ -418,20 +418,20 @@ body::before {
         rgba(233, 213, 255, 0.6) 0%,
         rgba(191, 219, 254, 0.6) 100%
     );
-    box-shadow: 0 6px 12px rgba(126, 87, 194, 0.2);
-    color: #4A148C !important;
+    box-shadow: 0 4px 10px rgba(138, 148, 232, 0.15); /* 静态阴影改用按钮主色调，降低透明度 */
+    color: #8A94E8 ;
     border-color: transparent;
 }
 .copy-btn { border: none; background: transparent; color: #6c757d; cursor: pointer; padding: 5px 10px; }
    
-/* 为图片识别按钮添加脉冲特效 */
+/* 为公式手册按钮添加脉冲特效 */
 .btn-modern.btn-formula-gradient:hover {
     animation: pulse-purple-blue 1.2s infinite;
 }
 @keyframes pulse-purple-blue {
-    0% { box-shadow: 0 0 0 0 rgba(126, 87, 194, 0.4); }
-    60% { box-shadow: 0 0 0 10px rgba(126, 87, 194, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(126, 87, 194, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(138, 148, 232, 0.4); } /* 用按钮默认色 #8A94E8 */
+    60% { box-shadow: 0 0 0 12px rgba(138, 148, 232, 0); } /* 稍微扩大扩散范围，更柔和 */
+    100% { box-shadow: 0 0 0 0 rgba(138, 148, 232, 0); }
 }
 /* 相机图标旋转动画 */
 .btn-camera-outline:hover .fa-camera {
@@ -477,7 +477,7 @@ body::before {
     /* 彩虹渐变背景 */
     background: conic-gradient(
         from var(--glow-angle),
-     #3186ff00 0deg 30deg,   /* 透明 */
+    #3186ff00 0deg 30deg,   /* 透明 */
     #34a853 35deg 85deg,    /* 绿色 */
     #ffd314 85deg 135deg,   /* 黄色 */
     #ff4641 130deg 180deg,  /* 红色 */
@@ -586,7 +586,7 @@ body::before {
     /* right: 20px; */
     font-size: 1.8rem;
     font-weight: bold;
-    color: #6366f1; 
+    color: #12aa9ca2; 
     background: var(--gradient-soft-blue-purple);
     padding: 10px 20px;
     border-radius: 50px;
@@ -706,7 +706,7 @@ body::before {
 
 .btn-login-header {
     background: white;
-    color: #3b82f6;
+    color: #12aa9ca2;
     text-decoration: none;
     padding: 8px 20px;
     border-radius: 20px;
@@ -780,15 +780,17 @@ html, body {
     line-height: 1.2;
     margin-bottom: 0.5rem;
     z-index: 100;
-    
+   
     /* 五色渐变文字 */
-    background:linear-gradient(135deg, 
-        #a855f7 0%,   /* purple-500 */
-        #6366f1 25%,  /* indigo-500 */
-        #3b82f6 50%,  /* blue-500 */
-        #0ea5e9 75%,  /* sky-500 */
-        #06b6d4 100%  /* cyan-500 */
-    );
+    background:linear-gradient(
+    110deg,
+    hsl(170deg 70% 68%),
+    hsl(202, 100%, 78%),
+    rgb(200, 205, 235),
+    rgb(205, 195, 235),
+    rgb(225, 195, 220),
+    rgb(248, 205, 180)
+  );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent !important;
