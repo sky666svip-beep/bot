@@ -192,13 +192,27 @@ def save_question_to_db(question, answer, reason, options=None, category='其他
     供 solve_pipeline 和 formula_example_generation 共用
     """
     try:
-        # 0. 计算标准化指纹并检查去重
+        # 0. 计算标准化指纹并过滤大范围
         if not std_q_text:
             std_q_text = nlp_engine.standardize_text(question)
-        existing = QuestionBank.query.filter_by(std_q=std_q_text).first()
-        if existing:
-            print(f"⚠️ [跳过入库] 题目已存在 ID: {existing.id} - {question[:20]}...")
-            return existing.id
+            
+        existings = QuestionBank.query.filter_by(std_q=std_q_text).all()
+        if existings:
+            # 1. 精细化校验防误杀：因为 std_q 过滤了数字，所以"求1+1"和"求2+2"的 std_q 是一样的
+            user_nums = extract_core_numbers(question)
+            user_opts_str = json.dumps(options, ensure_ascii=False) if options else None
+            
+            for ex in existings:
+                # A. 校验核心数字是否一致
+                if user_nums != extract_core_numbers(ex.question):
+                    continue
+                # B. 校验选项是否一致（避免同题不同选项）
+                ex_opts_str = json.dumps(_parse_options(ex.options), ensure_ascii=False) if ex.options else None
+                if user_opts_str != ex_opts_str:
+                    continue
+                    
+                print(f"⚠️ [跳过入库] 题目已完全存在 ID: {ex.id} - {question[:20]}...")
+                return ex.id
         
         # 1. 生成向量
         vector = nlp_engine.encode(question)

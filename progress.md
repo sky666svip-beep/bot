@@ -187,3 +187,28 @@
 - **验证结果**：
     - [x] 通过验证：首页图表（饼图、热力图）加载正常，交互逻辑连贯。
 - **附注**：无
+
+## 2026-03-29
+- **完成任务**：公式智能讲解结果本地缓存，避免每次重复调用 LLM
+- **技术实现细节**：
+    - **设计思路**：参照古诗词模块（`PoetryAnalysis`）的"先查库→空则调 LLM→回写入库"模式，在 `Formula` 模型新增 `explanation` 缓存字段。explain 模式命中缓存时同步返回（毫秒级），未命中时异步调用 LLM 并将结果回写数据库，后续访问直接读缓存。
+    - **核心变更**：
+        - `app/models.py`：`Formula` 模型新增 `explanation = db.Column(db.Text)` 字段
+        - `app/api/routes.py`：`explain_formula` 端点增加缓存判断——explain 模式先查 `formula.explanation`，有值同步返回 200 JSON（前端 `TaskPoller.submitAndPoll` 已内置同步返回兼容），无值走异步 LLM 并在后台线程中 `db.session.get(Formula, id)` 回写
+        - 数据库迁移：`ALTER TABLE formulas ADD COLUMN explanation TEXT`
+- **遇到的问题与解决方案**：无
+- **验证结果**：
+    - [x] 通过验证：服务器正常启动，前端 `TaskPoller.submitAndPoll` 已原生支持同步/异步双通道，无需修改前端代码
+- **附注**：
+    - example（智能例题）模式保持每次重新生成，因为每次出的题应该不同
+    - 如需清除某个公式的讲解缓存重新生成，可通过数据库将 `explanation` 字段置 NULL
+
+- **完成任务**：增强古诗词联想输入功能的候选列表滑动预览，支持按诗词内容检索
+- **技术实现细节**：
+    - **设计思路**：使用 SQL 的 `like` 增强检索范围；针对长候选列表定制专属宣纸风格的滚动条外观，提升 UI 美观度，并提高后端联想数据的默认 `limit` 阈值。
+    - **核心变更**：
+        - `app/api/routes.py`：`search_poetry` 和 `suggest_poetry` 接口加入 `Poetry.content.like` 的 or 条件从而支持诗句截断/模糊搜索；同时将 `suggest_poetry` 接口的推荐条目防波堤 `limit(5)` 提高至 `limit(30)`。
+        - `app/templates/poetry.html`：配置 `.suggest-dropdown` 的 `max-height: 280px` 迫使其尽早触发垂直滚动条 `overflow-y: auto;`。基于 `-webkit-scrollbar` 提供高度定制度的半透明+主题边框色的古式宣纸滑动条效果。
+- **遇到的问题与解决方案**：无
+- **验证结果**：
+    - [x] 通过验证：下拉框多数据时产生优美的自定义 UI 滚动条效果，诗句片段检索已生效。

@@ -249,6 +249,7 @@ def submit_simulation_api():
         else:
             embeddings = [[] for _ in results]
 
+        from app.services.answer_engine import extract_core_numbers, _parse_options
         for i, item in enumerate(results):
             history = UserHistory(
                 question=item.get('question'), answer=item.get('answer'), reason=item.get('reason'),
@@ -256,13 +257,30 @@ def submit_simulation_api():
             )
             history_records.append(history)
 
-            opts = item.get('options')
-            new_q = QuestionBank(
-                question=texts_to_encode[i], std_q=std_texts[i], answer=item.get('answer'),
-                reason=item.get('reason'), options=json.dumps(opts, ensure_ascii=False) if opts else None,
-                category=item.get('category', '模拟考试'), embedding=json.dumps(embeddings[i].tolist()) if len(embeddings[i])>0 else None
-            )
-            new_questions.append(new_q)
+            # --- 二阶精密去重校验 (与 answer_engine.py 保持同频) ---
+            existings = QuestionBank.query.filter_by(std_q=std_texts[i]).all()
+            is_dup = False
+            if existings:
+                user_nums = extract_core_numbers(texts_to_encode[i])
+                user_opts_str = json.dumps(item.get('options'), ensure_ascii=False) if item.get('options') else None
+                for ex in existings:
+                    if user_nums != extract_core_numbers(ex.question):
+                        continue
+                    ex_opts_str = json.dumps(_parse_options(ex.options), ensure_ascii=False) if ex.options else None
+                    if user_opts_str != ex_opts_str:
+                        continue
+                    is_dup = True
+                    print(f"⚠️ [跳过入库] 模拟考试题目已存在 ID: {ex.id}")
+                    break
+            
+            if not is_dup:
+                opts = item.get('options')
+                new_q = QuestionBank(
+                    question=texts_to_encode[i], std_q=std_texts[i], answer=item.get('answer'),
+                    reason=item.get('reason'), options=json.dumps(opts, ensure_ascii=False) if opts else None,
+                    category=item.get('category', '模拟考试'), embedding=json.dumps(embeddings[i].tolist()) if len(embeddings[i])>0 else None
+                )
+                new_questions.append(new_q)
 
         db.session.add_all(history_records)
         db.session.flush()
@@ -289,10 +307,10 @@ def search_poetry():
     if not keyword:
         return jsonify({"success": False, "message": "关键词为空"})
 
-    # 1. 查库 (Exact or Fuzzy 模糊匹配 Title 或 Author)
+    # 1. 查库 (Exact or Fuzzy 模糊匹配 Title、Author 或 Content)
     poetry = Poetry.query.filter(or_(Poetry.title == keyword, Poetry.author == keyword)).first()
     if not poetry:
-        poetry = Poetry.query.filter(or_(Poetry.title.like(f"%{keyword}%"), Poetry.author.like(f"%{keyword}%"))).first()
+        poetry = Poetry.query.filter(or_(Poetry.title.like(f"%{keyword}%"), Poetry.author.like(f"%{keyword}%"), Poetry.content.like(f"%{keyword}%"))).first()
     # 2. 如果库里有诗且有赏析 → 同步返回（毫秒级，无需异步）
     if poetry:
         analysis = PoetryAnalysis.query.filter_by(poetry_id=poetry.id).first()
@@ -352,6 +370,24 @@ def search_poetry():
 
     task_id = task_mgr.submit(_gen_poetry, app=app, owner=_get_owner())
     return jsonify({"success": True, "task_id": task_id}), 202
+
+@api_bp.route('/poetry/suggest', methods=['GET'])
+def suggest_poetry():
+    """输入联想：按关键词模糊匹配作者、标题或诗句内容，返回作品列表"""
+    keyword = request.args.get('q', '').strip()
+    if not keyword or len(keyword) < 1:
+        return jsonify({"data": []})
+
+    results = Poetry.query.filter(
+        or_(Poetry.title.like(f"%{keyword}%"), Poetry.author.like(f"%{keyword}%"), Poetry.content.like(f"%{keyword}%"))
+    ).limit(30).all()
+
+    return jsonify({
+        "data": [
+            {"id": p.id, "title": p.title, "author": f"{p.dynasty or ''} {p.author}"}
+            for p in results
+        ]
+    })
 
 # === 公式大全模块 ===
 
@@ -432,7 +468,11 @@ def search_formulas():
 
 @api_bp.route('/formulas/explain', methods=['POST'])
 def explain_formula():
-    """公式智能助教：讲解 & 出题"""
+    """公式智能助教：讲解 & 出题
+    
+    explain 模式：优先读取本地缓存，空则调 LLM 并回写数据库
+    example 模式：每次重新生成
+    """
     from app.services.llm_service import generate_formula_content
     from app.services.answer_engine import save_question_to_db
 
@@ -447,6 +487,10 @@ def explain_formula():
     if not formula:
         return jsonify({"success": False, "message": "Formula not found"})
 
+    # explain 模式：本地有缓存则同步返回（毫秒级）
+    if mode == 'explain' and formula.explanation:
+        return jsonify({"success": True, "data": formula.explanation, "source": "cache"})
+
     # 在 WSGI 线程中提取上下文（涉及 ORM），后台线程只做纯计算
     ctx = {
         "name": formula.name,
@@ -455,6 +499,7 @@ def explain_formula():
         "category": formula.category
     }
     formula_category = formula.category
+    formula_id = formula.id
     app = current_app._get_current_object()
 
     def _explain():
@@ -472,6 +517,12 @@ def explain_formula():
             else:
                 return {"success": False, "message": "生成格式错误"}
         else:
+            # explain 模式：LLM 结果回写数据库
+            if result:
+                f = db.session.get(Formula, formula_id)
+                if f:
+                    f.explanation = result
+                    db.session.commit()
             return {"success": True, "data": result}
 
     task_id = task_mgr.submit(_explain, app=app, owner=_get_owner())

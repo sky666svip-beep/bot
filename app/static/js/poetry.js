@@ -1,13 +1,25 @@
 const PoetrySearch = {
-    search: async () => {
-        const keyword = document.getElementById('poetryKeyword').value.trim();
+    // 防抖定时器
+    _debounceTimer: null,
+
+    search: async (title) => {
+        // 支持传入标题直接搜索
+        const keyword = title || document.getElementById('poetryKeyword').value.trim();
 
         if (!keyword) {
             alert('请输入关键词');
             return;
         }
 
-        // 2. 显示加载中
+        // 如果是点击候选项触发的，把标题回填到输入框
+        if (title) {
+            document.getElementById('poetryKeyword').value = title;
+        }
+
+        // 关闭候选下拉
+        PoetrySearch.hideSuggest();
+
+        // 显示加载中
         document.getElementById('poetryLoading').style.display = 'block';
         document.getElementById('poetryResult').style.display = 'none';
 
@@ -32,24 +44,66 @@ const PoetrySearch = {
         }
     },
 
+    // 输入联想：防抖查询候选列表
+    onInput: (e) => {
+        clearTimeout(PoetrySearch._debounceTimer);
+        const q = e.target.value.trim();
+
+        if (q.length < 1) {
+            PoetrySearch.hideSuggest();
+            return;
+        }
+
+        PoetrySearch._debounceTimer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/poetry/suggest?q=${encodeURIComponent(q)}`);
+                const json = await res.json();
+                PoetrySearch.renderSuggest(json.data || []);
+            } catch (err) {
+                console.warn('联想查询失败', err);
+            }
+        }, 250);
+    },
+
+    // 渲染候选下拉
+    renderSuggest: (items) => {
+        const dropdown = document.getElementById('suggestDropdown');
+
+        if (!items.length) {
+            dropdown.classList.remove('show');
+            dropdown.innerHTML = '';
+            return;
+        }
+
+        dropdown.innerHTML = items.map(item =>
+            `<div class="suggest-item" onclick="PoetrySearch.search('${item.title.replace(/'/g, "\\'")}')">
+                <span class="title">${item.title}</span>
+                <span class="author">${item.author}</span>
+            </div>`
+        ).join('');
+
+        dropdown.classList.add('show');
+    },
+
+    hideSuggest: () => {
+        const dropdown = document.getElementById('suggestDropdown');
+        dropdown.classList.remove('show');
+        dropdown.innerHTML = '';
+    },
+
     render: (data) => {
         document.getElementById('poetryResult').style.display = 'block';
         
         document.getElementById('pTitle').innerText = data.title;
-        document.getElementById('pAuthor').innerText = data.author; // 已经包含 [唐]
+        document.getElementById('pAuthor').innerText = data.author;
         
         // 处理原文，增加 tooltip
-        // data.content 可能是纯文本，换行符 \n
-        // data.annotations 是数组 [{word, note}]
         let contentHtml = data.content.replace(/\n/g, '<br>');
         
         if (data.annotations && Array.isArray(data.annotations)) {
-            // 简单处理：遍历 annotations，把 contentHtml 里的 word 替换带 tooltip 的 span
             data.annotations.forEach(anno => {
                 const word = anno.word;
                 const note = anno.note;
-                // 使用正则替换，加上 class 和 data-bs-toggle
-                // 这是一个简化的替换，如果同一个字出现多次可能会全被替换
                 try {
                     const regex = new RegExp(word, 'g');
                     contentHtml = contentHtml.replace(regex, `<span class="poetry-annotation" data-bs-toggle="tooltip" title="${note}">${word}</span>`);
@@ -71,9 +125,22 @@ const PoetrySearch = {
     }
 };
 
-// 支持回车搜索
-document.getElementById('poetryKeyword').addEventListener('keypress', function (e) {
+// 绑定事件
+const poetryInput = document.getElementById('poetryKeyword');
+
+// 回车搜索
+poetryInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         PoetrySearch.search();
+    }
+});
+
+// 输入联想
+poetryInput.addEventListener('input', PoetrySearch.onInput);
+
+// 点击页面其他区域关闭下拉
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrapper')) {
+        PoetrySearch.hideSuggest();
     }
 });

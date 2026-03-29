@@ -74,7 +74,7 @@ def call_llm(question, options=None, is_doc=False):
     doc_context = "注意：以下内容提取自PDF/文档，可能包含乱码、页码或格式错位，请先理顺题目逻辑再回答。" if is_doc else ""
     
     prompt = f"""
-    你是一个全能解题专家。{doc_context}请分析并回答以下题目。
+    你是一个解题专家。{doc_context}请分析并回答以下题目。
     题目内容：{question}
     {options_str}
     
@@ -95,8 +95,8 @@ def solve_with_vision(image_path):
     max_retries = 2
     image_uri = f"file://{os.path.abspath(image_path)}"
     prompt = """
-    你是一个全能解题专家。请识别图片中的题目，并直接给出答案和解析。
-    【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记和除答案和解析以外的内容。
+    你是一个解题专家。识别图片中的题目，并直接给出答案和解析。
+    【重要】严格输出标准 JSON 格式，不要输出 Markdown 标记和除答案和解析以外的内容。
     格式要求：
     {
       "question": "识别出的完整题目（含选项，如有，不包含题号等无关信息）",
@@ -129,9 +129,9 @@ def solve_with_vision(image_path):
 def analyze_essay(text, essay_type):
     """作文批改"""
     if essay_type == 'chinese':
-        role = "资深语文老师"
+        role = "语文老师"
         prompt = f"""
-        请批改以下作文。要求输出为严格的 JSON 格式。
+        批改以下作文。要求输出为严格的 JSON 格式。
         包含字段：
         1. "score": 评分（优秀/良好/中等/及格/不及格）
         2. "summary": 总评
@@ -141,7 +141,7 @@ def analyze_essay(text, essay_type):
         作文内容：{text}
         """
     else:
-        role = "Strict English Teacher"
+        role = "English Teacher"
         prompt = f"""
         Correct the essay. Return strictly in JSON format.
         Fields:
@@ -181,7 +181,7 @@ def generate_study_plan(profile_data):
     """学习计划"""
     start_time = profile_data.get('startTime', '09:00')
     prompt = f"""
-    请根据以下学生信息，制定一份详细的今日学习计划。
+    根据以下学生信息，制定一份详细的今日学习计划。
     画像：年级{profile_data.get('grade')}, 弱项{profile_data.get('weakness')}, 目标{profile_data.get('goal')}, 时长{profile_data.get('duration')}小时, 开始时间{start_time}
     
     要求：
@@ -199,7 +199,7 @@ def generate_study_plan(profile_data):
 def generate_exam_questions(criteria):
     """自动出题"""
     prompt = f"""
-    请根据要求生成微型测验题。
+    根据要求生成微型测验题。
     要求：{criteria.get('grade')}{criteria.get('subject')}, 考点{criteria.get('keypoint')}, {criteria.get('count')}道
     题型：{', '.join(criteria.get('types', ['单选题']))}
     
@@ -226,12 +226,12 @@ def generate_poetry_analysis(keyword):
     关键词：{keyword}
     要求：深入探讨思想内涵、意象意境、语言风格及表达技巧。
     
-    【重要】请严格只输出标准 JSON 格式，不要输出 Markdown 标记或任何其他解释性文字。"content"字段必须是完整的文章内容，不是选段。必须包含以下完整的结构：
+    【重要】严格输出标准 JSON 格式，不要输出 Markdown 标记或任何其他解释性文字。"content"字段必须是完整的诗词内容，不是选段。必须包含以下完整的结构：
     {{ 
         "title": "...", 
         "author": "...", 
         "content": "...", 
-        "translation": "...", 
+        "translation": "诗词中文译文", 
         "appreciation": "...", 
         "annotations": [ {{ "word": "...", "note": "..." }} ] 
     }}
@@ -249,31 +249,31 @@ def generate_formula_content(formula_context, type="explain"):
     """
     if type == 'explain':
         prompt = f"""
-        请用为学生讲解以下公式。
+        为学生讲解以下公式。
         公式名称：{formula_context.get('name')}
         公式内容：{formula_context.get('formula')}
         
         要求：
-        1. 简短解释公式的核心含义和物理/几何意义。
-        2. 举一个简短实例简单类比。
+        1. 解释公式的核心含义/物理/几何意义。
+        2. 举一个实例简单类比。
         3. 输出 Markdown 格式。
         
-        请直接输出 Markdown 内容，不要包含 JSON 格式。
+        直接输出 Markdown 内容，不要包含 JSON 格式。
         """
         json_prompt = prompt + "\n\n请输出 JSON: { \"content\": \"markdown string...\" }"
-        res = _call_qwen_json(json_prompt, system_role="金牌理科辅导员")
+        res = _call_qwen_json(json_prompt, system_role="金牌教师")
         return res.get('content', '解析生成失败')
         
     elif type == 'example':
         prompt = f"""
-        请根据以下公式生成一道经典的 {formula_context.get('grade')} 难度例题。
+        根据以下公式生成一道经典的 {formula_context.get('grade')} 难度例题。
         公式名称：{formula_context.get('name')}
         公式内容：{formula_context.get('formula')}
         
         要求：
         1. 题目要典型，考察公式的核心用法，不要出选择题。
         2. 必须包含简短的解析步骤。
-        3. 输出 JSON 格式用于入库。
+        3. 输出标准 JSON 格式。
         
         输出 JSON 结构：
         {{

@@ -202,6 +202,9 @@ class Formula(db.Model):
         # 核心：语义向量
         embedding = db.Column(db.Text)
 
+        # LLM 讲解缓存
+        explanation = db.Column(db.Text)
+
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
         def to_dict(self):

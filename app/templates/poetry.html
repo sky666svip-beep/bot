@@ -304,6 +304,66 @@
             box-shadow: none;
             border-color: transparent;
         }
+
+        /* 候选下拉列表 */
+        .suggest-dropdown {
+            position: absolute;
+            left: 0; right: 0;
+            top: calc(100% + 6px);
+            background: #fffef9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            max-height: 180px; /* 限制最大高度触发滚动 */
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        
+        /* 自定义滚动条样式 */
+        .suggest-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+        .suggest-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 10px;
+        }
+        .suggest-dropdown::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+        .suggest-dropdown::-webkit-scrollbar-thumb:hover {
+            background: var(--cyan-blue);
+        }
+
+        .suggest-dropdown.show { display: block; }
+
+        .suggest-item {
+            padding: 12px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            transition: background 0.15s;
+        }
+        .suggest-item:last-child { border-bottom: none; }
+        .suggest-item:first-child { border-radius: 12px 12px 0 0; }
+        .suggest-item:last-child { border-radius: 0 0 12px 12px; }
+        .suggest-item:hover {
+            background: var(--apricot);
+        }
+        .suggest-item .title {
+            font-weight: 600;
+            color: var(--ink-black);
+            font-size: 1.05rem;
+        }
+        .suggest-item .author {
+            color: var(--cyan-blue);
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            margin-left: 16px;
+        }
     </style>
 </head>
 <body>
@@ -327,11 +387,13 @@
         <!-- 搜索框 -->
         <div class="search-wrapper animate__animated animate__fadeInUp">
             <div class="search-box">
-                <input type="text" id="poetryKeyword" class="form-control" placeholder="请输入诗词标题或作者（如：赤壁赋）...">
+                <input type="text" id="poetryKeyword" class="form-control" placeholder="请输入诗词标题或作者或诗句（如：静夜思）..." autocomplete="off">
                 <button class="btn-search" onclick="PoetrySearch.search()">
                     鉴赏
                 </button>
             </div>
+            <!-- 候选作品下拉列表 -->
+            <div class="suggest-dropdown" id="suggestDropdown"></div>
         </div>
 
         <!-- Loading -->
