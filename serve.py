@@ -59,13 +59,6 @@ def create_server_app():
         )
         return response
 
-    with app.app_context():
-        if QuestionBank.query.first():
-            print("正在加载 NLP 显存索引...")
-            nlp_engine.refresh_index(QuestionBank)
-        else:
-            print("⚠️ 数据库为空，跳过索引加载。请先运行 advanced_import.py")
-
     return app
 
 
@@ -90,32 +83,20 @@ class CacheControlMiddleware:
 
 
 if __name__ == '__main__':
-    MAX_RETRIES = 10  # 最大连续重启次数
-    COOLDOWN = 5      # 崩溃后等待秒数
-    retry_count = 0
-
-    while retry_count < MAX_RETRIES:
-        try:
-            app = create_server_app()
-            # 包装 WSGI 中间件
-            app = CacheControlMiddleware(app)
-            
-            print("🚀 ChoiceBot 生产服务器启动中 (Waitress, 8线程)...")
-            print("📡 地址: http://0.0.0.0:5000")
-            print("🌐 外网: https://amxsvip.site")
-            print(f"📝 日志: {LOG_DIR}")
-            
-            retry_count = 0  # 启动成功后重置计数
-            serve(app, host='0.0.0.0', port=5000, threads=8)
-        except KeyboardInterrupt:
-            print("\n⏹️ 服务器已手动停止")
-            break
-        except Exception as e:
-            retry_count += 1
-            logging.error(f"服务器崩溃 (第 {retry_count}/{MAX_RETRIES} 次): {e}")
-            print(f"❌ 服务器崩溃: {e}")
-            print(f"🔄 {COOLDOWN}秒后自动重启... ({retry_count}/{MAX_RETRIES})")
-            time.sleep(COOLDOWN)
-
-    if retry_count >= MAX_RETRIES:
-        print(f"🛑 连续崩溃 {MAX_RETRIES} 次，已停止自动重启。请检查 logs/error.log")
+    try:
+        app = create_server_app()
+        # 包装 WSGI 中间件
+        app = CacheControlMiddleware(app)
+        
+        print("🚀 ChoiceBot 服务器启动中 (Waitress, 8线程)...")
+        print("📡 地址: http://0.0.0.0:5000")
+        print("🌐 外网: https://amxsvip.site")
+        print(f"📝 日志: {LOG_DIR}")
+        
+        serve(app, host='0.0.0.0', port=5000, threads=8)
+    except KeyboardInterrupt:
+        print("\n⏹️ 服务器已手动停止")
+    except Exception as e:
+        logging.error(f"❌ 服务器致命崩溃并彻底退出: {e}", exc_info=True)
+        print(f"❌ 服务器崩溃。进程已终止。请检查 logs/error.log 或者交由外部服务守护系统重启。")
+        exit(1)

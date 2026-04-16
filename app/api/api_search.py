@@ -10,6 +10,7 @@ from app.services.answer_engine import solve_pipeline, save_question_to_db, save
 from app.services.llm_service import solve_with_vision
 from app.services.async_task import task_mgr
 from flask_login import login_required, current_user
+from app.services.nlp_service import nlp_engine
 
 search_bp = Blueprint('search', __name__)
 
@@ -25,6 +26,9 @@ def allowed_file(filename, allowed_set):
 # ----------------------------------------------------------------
 @search_bp.route('/search', methods=['POST'])
 def search_question():
+    if not nlp_engine.is_ready:
+        return jsonify({"success": False, "message": "深度学习引擎初始化中，请等候数秒再尝试搜索..."}), 503
+
     user_query = request.json.get('query', '').strip()
     if not user_query:
         return jsonify({"success": False, "message": "请输入题目"})
@@ -56,6 +60,9 @@ def search_question():
 @login_required
 def solve():
     """传统 Pipeline 接口"""
+    if not nlp_engine.is_ready:
+        return jsonify({"success": False, "message": "深度学习引擎初始化中，请稍后再试..."}), 503
+        
     data = request.json
     uid = current_user.id
     question = data.get('question', '')
@@ -72,6 +79,9 @@ def solve():
 @login_required
 def solve_image():
     """视觉路由：图片搜题 (Vision ML)"""
+    if not nlp_engine.is_ready:
+        return jsonify({"success": False, "message": "引擎预热中，功能暂时不可用，请等候数秒..."}), 503
+
     file = request.files.get('file')
     if not file or not file.filename:
         return jsonify({'success': False, 'message': '无效图片文件'}), 400

@@ -27,6 +27,8 @@ Major_historical_events.html
 # 日志目录
 logs/
 test/
+task_plan.md
+findings.md
 # ===================== 部署相关 =====================
 cloudflared.exe
 config.yml

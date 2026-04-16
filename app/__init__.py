@@ -48,6 +48,20 @@ def create_app(config_class=Config):
     def index():
         return render_template('index.html')
 
+    # 全局健康检查入口
+    @app.route('/health')
+    def health_check():
+        try:
+            from app.services.nlp_service import nlp_engine
+            health_data = nlp_engine.get_health_status()
+            return jsonify({
+                "status": "ok" if health_data["is_ready"] else "loading",
+                "message": "全局服务与引擎就绪" if health_data["is_ready"] else "各子系统正在预热分配资源，请耐心等待...",
+                "metrics": health_data
+            }), 200
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"健康探测失败: {str(e)}"}), 500
+
     with app.app_context():
         # A. 数据库表结构初始化
         from app import models
@@ -55,15 +69,19 @@ def create_app(config_class=Config):
         db.create_all()
         print("数据库连接成功，数据已加载")
 
-        # B. 启动 ML 矩阵索引构建
+        # B. 启动 ML 矩阵异步初始化 (后台加载)
         try:
-            print("正在初始化模型与向量索引...")
             from app.services.nlp_service import nlp_engine
-            nlp_engine.refresh_index(QuestionBank)
-            nlp_engine.refresh_formula_index(Formula)
-            print("答题助手已就绪 ")
+            import threading
+            
+            def init_ai():
+                with app.app_context():
+                    print(" [后台线程] 引擎启动中...加载模型大矩阵可能会花费数秒。")
+                    nlp_engine.background_initialize(QuestionBank, Formula)
+
+            thread = threading.Thread(target=init_ai, daemon=True, name="ML_Init_Thread")
+            thread.start()
         except Exception as e:
-            print(f"AI 引擎启动异常: {e}")
-            print("   (如果是第一次运行，请忽略此错误，先运行 advanced_import.py 导入数据)")
+            print(f"AI 引擎调度异常: {e}")
 
     return app

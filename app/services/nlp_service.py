@@ -7,12 +7,15 @@ import logging
 import re
 import math
 import numpy as np
+import threading
 from sentence_transformers import SentenceTransformer, util
 
 class NLPService:
     _instance = None
     model = None
     device = None
+    is_ready = False
+    _init_lock = None
     # 停用词集合
     stopwords = set()
     # --- ML 核心数据结构 ---
@@ -72,11 +75,39 @@ class NLPService:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(NLPService, cls).__new__(cls)
+            cls._instance._init_lock = threading.Lock()
+            cls._instance.is_ready = False
             cls._instance._load_model()
             cls._instance._load_stopwords()
             # 初始化时同步自定义词库
             cls._instance._sync_custom_words()
         return cls._instance
+
+    def background_initialize(self, question_model, formula_model):
+        """后台异步加载向量大矩阵，通过锁防止数据竞争"""
+        with self._init_lock:
+            if self.is_ready: return
+            self.refresh_index(question_model)
+            self.refresh_formula_index(formula_model)
+            self.is_ready = True
+            print(" [NLPService] 所有矩阵索引加载完毕，搜索引擎正式就绪并对外提供服务！")
+
+    def get_health_status(self):
+        """获取引擎的健康监控数据"""
+        status = {
+            "is_ready": self.is_ready,
+            "device": self.device,
+            "questions_count": len(self._corpus_data) if self._corpus_data else 0,
+            "formulas_count": len(self._formula_data) if self._formula_data else 0,
+            "memory_usage_mb": 0.0
+        }
+        mem = 0.0
+        if self._corpus_tensor is not None:
+            mem += (self._corpus_tensor.element_size() * self._corpus_tensor.nelement())
+        if self._formula_tensor is not None:
+            mem += (self._formula_tensor.element_size() * self._formula_tensor.nelement())
+        status["memory_usage_mb"] = round(mem / 1024 / 1024, 2)
+        return status
 
     def _sync_custom_words(self):
         """将逻辑词同步到 jieba，防止被切碎"""

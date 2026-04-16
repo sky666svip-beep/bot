@@ -35,20 +35,45 @@ const TaskPoller = {
         throw new Error('任务超时，请稍后重试');
     },
 
-    /**
-     * 提交 + 轮询的一体化封装
-     * 发起请求 → 拿到 task_id → 指数退避轮询至完成
-     * @param {string} url      - 接口地址
-     * @param {object} fetchOpts - fetch 参数
-     * @param {object} pollOpts  - 轮询配置
-     * @returns {Promise<any>} 任务结果
-     */
     async submitAndPoll(url, fetchOpts = {}, pollOpts = {}) {
-        const res = await fetch(url, fetchOpts);
-        const json = await res.json();
+        let res, json;
+        const maxRetries = pollOpts.submitMaxRetries || 7;
+        let retryInterval = 2000; // 初始退避 2 秒
+
+        for (let i = 0; i < maxRetries; i++) {
+            res = await fetch(url, fetchOpts);
+            
+            try {
+                json = await res.json();
+            } catch (e) {
+                if (res.status === 503) json = { message: "后端引擎预热中..." };
+                else throw new Error(`[HTTP ${res.status}] 数据解析失败`);
+            }
+
+            if (res.status === 503) {
+                console.warn(`[HTTP 503] 模型未就绪，${retryInterval}ms 后进行第 ${i + 1} 次重发...`, json.message);
+                
+                // 抛出加载中事件，供外层 UI 显示倒计时或重试提示
+                window.dispatchEvent(new CustomEvent('engine-loading', { 
+                    detail: { attempt: i + 1, message: json.message }
+                }));
+
+                await new Promise(r => setTimeout(r, retryInterval));
+                retryInterval = Math.min(retryInterval * 1.5, 10000); // 最大不跨越 10s
+                continue;
+            }
+            
+            // 请求不再呈现 503，发射就绪事件复位 UI
+            if (i > 0) window.dispatchEvent(new CustomEvent('engine-ready'));
+            break;
+        }
+
+        if (res?.status === 503) {
+            throw new Error(`引擎装载极度缓慢或服务过载，请稍后刷新重试`);
+        }
 
         // 后端返回 202 + task_id → 走轮询
-        if (json.task_id) {
+        if (json && json.task_id) {
             return this.poll(json.task_id, pollOpts);
         }
         // 同步返回（快速接口不需要异步化）
